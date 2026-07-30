@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LeimTwitchBot — панель управления чат-ботом</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#08080D;
+  --panel:#121120;
+  --panel-2:#1A1830;
+  --panel-3:#211E3A;
+  --border:#2A2645;
+  --text:#EDEAF7;
+  --muted:#8985A3;
+  --dim:#5F5B78;
+  --violet:#8B6CFA;
+  --violet-dim:#5B4CA8;
+  --magenta:#FF4FA0;
+  --cyan:#34E8C6;
+  --amber:#FFB454;
+  --danger:#FF5C7A;
+  --radius:14px;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  background:
+    radial-gradient(1100px 600px at 85% -10%, rgba(139,108,250,.16), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(255,79,160,.10), transparent 60%),
+    var(--bg);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--violet); color:#fff;}
+::-webkit-scrollbar{width:8px; height:8px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--panel-3); border-radius:8px;}
+::-webkit-scrollbar-thumb:hover{background:var(--violet-dim);}
+h1,h2,h3,.display{font-family:'Chakra Petch',sans-serif; letter-spacing:.02em;}
+button{font-family:inherit; cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+a{color:inherit;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.hidden{display:none !important;}
+
+/* ============ LOGIN SCREEN ============ */
+#loginScreen{
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  position:relative; overflow:hidden; padding:24px;
+}
+#loginScreen::before{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background-image: linear-gradient(rgba(139,108,250,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(139,108,250,.05) 1px, transparent 1px);
+  background-size:44px 44px;
+  mask-image: radial-gradient(700px 500px at 50% 40%, black, transparent 75%);
+}
+.login-card{
+  position:relative; z-index:1; max-width:520px; width:100%;
+  background:linear-gradient(180deg, var(--panel), var(--panel));
+  border:1px solid var(--border); border-radius:20px; padding:44px 40px;
+  box-shadow:0 30px 80px -20px rgba(0,0,0,.6);
+}
+.brandmark{display:flex; align-items:center; gap:10px; margin-bottom:28px;}
+.brandmark .dot{width:10px; height:10px; border-radius:50%; background:var(--magenta); box-shadow:0 0 0 4px rgba(255,79,160,.18); animation:pulse 1.6s ease-in-out infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 4px rgba(255,79,160,.18);} 50%{box-shadow:0 0 0 8px rgba(255,79,160,.06);}}
+.brandmark span{font-size:12px; letter-spacing:.22em; color:var(--muted); text-transform:uppercase;}
+.login-card h1{font-size:32px; font-weight:700; line-height:1.15; margin-bottom:8px;}
+.login-card h1 em{font-style:normal; color:var(--violet);}
+.login-card p.lead{color:var(--muted); font-size:14.5px; line-height:1.6; margin-bottom:26px;}
+.scope-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:28px;}
+.scope-grid div{
+  font-size:12px; color:var(--muted); background:var(--panel-2); border:1px solid var(--border);
+  border-radius:9px; padding:8px 10px; display:flex; gap:7px; align-items:center;
+}
+.scope-grid div::before{content:"◆"; color:var(--cyan); font-size:9px;}
+.btn-twitch{
+  width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
+  background:var(--violet); color:#fff; border:none; padding:15px 20px; border-radius:11px;
+  font-weight:600; font-size:15px; transition:.15s ease; box-shadow:0 10px 30px -8px rgba(139,108,250,.6);
+}
+.btn-twitch:hover{background:#7a58f2; transform:translateY(-1px);}
+.login-foot{margin-top:18px; font-size:12px; color:var(--dim); text-align:center; line-height:1.6;}
+.login-foot code{background:var(--panel-2); padding:2px 6px; border-radius:5px; color:var(--cyan); font-size:11px;}
+.adv-toggle{margin-top:14px; text-align:center;}
+.adv-toggle button{background:none; border:none; color:var(--muted); font-size:12px; text-decoration:underline; text-underline-offset:3px;}
+#advSettings{margin-top:14px; display:grid; gap:10px;}
+#advSettings label{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; display:block; margin-bottom:4px;}
+#advSettings input{width:100%; background:var(--panel-2); border:1px solid var(--border); color:var(--text); padding:9px 11px; border-radius:8px; font-size:13px;}
+
+/* ============ APP SHELL ============ */
+#app{display:none; min-height:100vh; grid-template-columns:220px 1fr;}
+#app.active{display:grid;}
+.sidebar{
+  background:var(--panel); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; padding:20px 14px; gap:4px;
+}
+.sb-brand{display:flex; align-items:center; gap:9px; padding:6px 10px 22px;}
+.sb-brand .mark{width:30px; height:30px; border-radius:8px; background:linear-gradient(135deg,var(--violet),var(--magenta)); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; font-family:'Chakra Petch',sans-serif;}
+.sb-brand .name{font-family:'Chakra Petch',sans-serif; font-weight:700; font-size:15px;}
+.sb-brand .name small{display:block; font-family:'Inter'; font-weight:400; font-size:10px; color:var(--dim); letter-spacing:.1em; text-transform:uppercase; margin-top:1px;}
+.nav-btn{
+  display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:10px;
+  color:var(--muted); background:none; border:none; text-align:left; font-size:13.5px; font-weight:500; transition:.12s ease;
+}
+.nav-btn svg{width:16px; height:16px; flex-shrink:0; opacity:.8;}
+.nav-btn:hover{background:var(--panel-2); color:var(--text);}
+.nav-btn.active{background:var(--panel-3); color:#fff;}
+.nav-btn.active svg{opacity:1; color:var(--violet);}
+.sb-spacer{flex:1;}
+.sb-status{background:var(--panel-2); border:1px solid var(--border); border-radius:11px; padding:12px; margin-bottom:8px;}
+.sb-status .row{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); margin-bottom:6px;}
+.sb-status .live-dot{width:7px; height:7px; border-radius:50%; background:var(--dim);}
+.sb-status .live-dot.on{background:var(--cyan); box-shadow:0 0 0 3px rgba(52,232,198,.2); animation:pulse2 1.8s infinite;}
+@keyframes pulse2{0%,100%{box-shadow:0 0 0 3px rgba(52,232,198,.2);}50%{box-shadow:0 0 0 6px rgba(52,232,198,.05);}}
+.sb-status b{color:var(--text); font-weight:600;}
+.sb-logout{background:none; border:1px solid var(--border); color:var(--muted); padding:9px; border-radius:9px; font-size:12px; width:100%;}
+.sb-logout:hover{border-color:var(--danger); color:var(--danger);}
+
+.main{padding:22px 28px 40px; max-width:1240px;}
+.topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; gap:16px;}
+.topbar h2{font-size:22px; font-weight:700;}
+.topbar .sub{color:var(--muted); font-size:13px; margin-top:2px;}
+.signal{display:flex; align-items:flex-end; gap:2px; height:26px;}
+.signal i{width:3px; background:var(--violet); border-radius:2px; opacity:.35; transition:height .18s ease, opacity .18s ease;}
+
+.panel{display:none;}
+.panel.active{display:block;}
+
+.card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px;}
+.card + .card{margin-top:14px;}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+.grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:14px;}
+.grid4{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+.grid5{display:grid; grid-template-columns:repeat(5,1fr); gap:14px;}
+@media(max-width:1000px){.grid2,.grid3,.grid4,.grid5{grid-template-columns:1fr 1fr;}}
+
+.stat-card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px;}
+.stat-card .label{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--dim);}
+.stat-card .val{font-family:'Chakra Petch',sans-serif; font-size:26px; font-weight:700; margin-top:6px;}
+.stat-card .val span{font-size:13px; color:var(--muted); font-weight:500;}
+
+h3.section-title{font-size:14px; font-weight:600; margin-bottom:12px; display:flex; align-items:center; gap:8px;}
+h3.section-title::before{content:""; width:3px; height:14px; background:var(--violet); border-radius:2px;}
+
+/* Chat feed */
+.chatlog{height:520px; overflow-y:auto; display:flex; flex-direction:column; gap:0; font-family:'JetBrains Mono',monospace; font-size:13px; padding-right:4px;}
+.chat-line{padding:6px 4px; border-bottom:1px solid rgba(255,255,255,.03); line-height:1.5; word-break:break-word;}
+.chat-line .badge{display:inline-block; font-size:9px; padding:1px 5px; border-radius:4px; margin-right:5px; font-weight:700; vertical-align:2px; font-family:'Inter';}
+.badge.mod{background:rgba(52,232,198,.18); color:var(--cyan);}
+.badge.broadcaster{background:rgba(255,79,160,.2); color:var(--magenta);}
+.badge.sub{background:rgba(255,180,84,.18); color:var(--amber);}
+.badge.vip{background:rgba(255,79,160,.18); color:var(--magenta);}
+.chat-line .uname{font-weight:600;}
+.chat-line.event{color:var(--cyan); background:rgba(52,232,198,.05); border-radius:6px; padding:6px 8px;}
+.chat-line .ts{color:var(--dim); font-size:10.5px; margin-right:6px;}
+.chatbar{display:flex; gap:8px; margin-top:12px;}
+.chatbar input{flex:1; background:var(--panel-2); border:1px solid var(--border); color:var(--text); padding:10px 13px; border-radius:9px; font-size:13px;}
+.chatbar button{background:var(--violet); color:#fff; border:none; padding:0 18px; border-radius:9px; font-weight:600; font-size:13px;}
+
+/* buttons */
+.btn{background:var(--panel-2); border:1px solid var(--border); color:var(--text); padding:9px 15px; border-radius:9px; font-size:13px; font-weight:500; transition:.12s;}
+.btn:hover{border-color:var(--violet-dim); background:var(--panel-3);}
+.btn.primary{background:var(--violet); border-color:var(--violet); color:#fff;}
+.btn.primary:hover{background:#7a58f2;}
+.btn.danger{background:transparent; border-color:var(--border); color:var(--danger);}
+.btn.danger:hover{border-color:var(--danger); background:rgba(255,92,122,.08);}
+.btn.sm{padding:6px 11px; font-size:12px;}
+.btn:disabled{opacity:.4; cursor:not-allowed;}
+
+/* forms */
+.field{margin-bottom:12px;}
+.field label{display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-bottom:5px;}
+.field input[type=text], .field input[type=number], .field textarea, .field select{
+  width:100%; background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+  padding:10px 12px; border-radius:9px; font-size:13.5px;
+}
+.field textarea{resize:vertical; min-height:60px;}
+.field-row{display:flex; gap:10px;}
+.field-row .field{flex:1;}
+.switch{display:inline-flex; align-items:center; gap:8px; cursor:pointer; user-select:none;}
+.switch input{display:none;}
+.switch .track{width:34px; height:19px; background:var(--panel-3); border-radius:12px; position:relative; transition:.15s; border:1px solid var(--border);}
+.switch .track::after{content:""; width:13px; height:13px; background:var(--muted); border-radius:50%; position:absolute; top:2px; left:2px; transition:.15s;}
+.switch input:checked + .track{background:var(--violet-dim); border-color:var(--violet);}
+.switch input:checked + .track::after{transform:translateX(15px); background:#fff;}
+
+/* lists / tables */
+.list-item{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; background:var(--panel-2); border:1px solid var(--border); border-radius:10px; margin-bottom:8px;}
+.list-item .lname{font-weight:600; font-size:13.5px;}
+.list-item .ldesc{color:var(--muted); font-size:12px; margin-top:2px; max-width:520px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.list-item .lmeta{display:flex; gap:6px; align-items:center;}
+.tag{font-size:10.5px; padding:2px 7px; border-radius:6px; background:var(--panel-3); color:var(--muted); text-transform:uppercase; letter-spacing:.04em;}
+.tag.on{color:var(--cyan); background:rgba(52,232,198,.1);}
+
+.lb-row{display:flex; align-items:center; gap:12px; padding:10px 6px; border-bottom:1px solid rgba(255,255,255,.04);}
+.lb-rank{width:22px; font-family:'Chakra Petch',sans-serif; font-weight:700; color:var(--dim); font-size:13px;}
+.lb-row:nth-child(1) .lb-rank{color:var(--amber);}
+.lb-row:nth-child(2) .lb-rank{color:#C9CBD9;}
+.lb-row:nth-child(3) .lb-rank{color:#D7935A;}
+.lb-name{flex:1; font-weight:600; font-size:13px;}
+.lb-pts{font-family:'JetBrains Mono',monospace; color:var(--cyan); font-size:13px;}
+
+.empty{color:var(--dim); font-size:13px; text-align:center; padding:26px 10px;}
+
+.toast-wrap{position:fixed; bottom:20px; right:20px; display:flex; flex-direction:column; gap:8px; z-index:200;}
+.toast{background:var(--panel-3); border:1px solid var(--border); border-left:3px solid var(--violet); padding:11px 15px; border-radius:9px; font-size:13px; box-shadow:0 12px 30px rgba(0,0,0,.4); animation:toastIn .2s ease;}
+.toast.err{border-left-color:var(--danger);}
+.toast.ok{border-left-color:var(--cyan);}
+@keyframes toastIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+
+.modal-bg{position:fixed; inset:0; background:rgba(4,4,8,.65); backdrop-filter:blur(3px); display:flex; align-items:center; justify-content:center; z-index:150;}
+.modal{background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:24px; width:440px; max-width:92vw; max-height:86vh; overflow-y:auto;}
+.modal h3{font-size:16px; margin-bottom:16px;}
+.modal-actions{display:flex; justify-content:flex-end; gap:8px; margin-top:16px;}
+
+.two-col{display:grid; grid-template-columns:1.3fr 1fr; gap:14px;}
+@media(max-width:1000px){.two-col{grid-template-columns:1fr;}}
+
+.hint{font-size:12px; color:var(--dim); margin-top:6px; line-height:1.5;}
+.divider{height:1px; background:var(--border); margin:16px 0;}
+
+.copybox{display:flex; gap:8px; align-items:center; background:var(--panel-2); border:1px solid var(--border); border-radius:9px; padding:9px 12px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--cyan); overflow-x:auto;}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN SCREEN ================= -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="brandmark"><div class="dot"></div><span>Панель управления ботом</span></div>
+    <h1>Leim<em>TwitchBot</em></h1>
+    <p class="lead">Чат-бот для Twitch прямо в браузере: кастомные команды, экономика очков, мини-игры для чата, модерация и таймеры. Подключается напрямую к чату по IRC — без сервера.</p>
+    <div class="scope-grid">
+      <div>Чтение и отправка чата</div>
+      <div>Очки и топ зрителей</div>
+      <div>Анаграммы и викторины</div>
+      <div>Автомодерация</div>
+      <div>Таймеры сообщений</div>
+      <div>Розыгрыши и опросы</div>
+    </div>
+    <button class="btn-twitch" id="btnLogin">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M11.64 5.93h1.43v4.28h-1.43m3.93-4.28H17v4.28h-1.43M7 2 3.43 5.57v12.86h4.28V22l3.58-3.57h2.85L20.57 12V2m-1.43 9.29-2.85 2.85h-2.86l-2.5 2.5v-2.5H7.71V3.43h11.43Z"/></svg>
+      Войти через Twitch
+    </button>
+    <div class="adv-toggle"><button id="toggleAdv" type="button">Настроить Redirect URI вручную</button></div>
+    <div id="advSettings" class="hidden">
+      <div>
+        <label>Redirect URI (должен совпадать с зарегистрированным в Twitch Dev Console)</label>
+        <input type="text" id="redirectUriInput">
+      </div>
+    </div>
+    <div class="login-foot">Страница должна быть открыта по адресу <code>https://</code>, который точно совпадает с адресом, прописанным в настройках приложения. Если вход не срабатывает — открой «Настроить Redirect URI вручную» и укажи точный адрес.</div>
+  </div>
+</div>
+
+<!-- ================= APP SHELL ================= -->
+<div id="app">
+  <aside class="sidebar">
+    <div class="sb-brand">
+      <div class="mark">L</div>
+      <div class="name">LeimTwitchBot<small id="sbChannel">—</small></div>
+    </div>
+
+    <button class="nav-btn active" data-panel="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Обзор</button>
+    <button class="nav-btn" data-panel="chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Чат</button>
+    <button class="nav-btn" data-panel="commands"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 17 6-6-6-6"/><path d="M12 19h8"/></svg>Команды</button>
+    <button class="nav-btn" data-panel="economy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5c0-1.4 1.3-2.5 3-2.5s3 .9 3 2c0 3-6 1.5-6 4.5 0 1.1 1.3 2 3 2s3-1.1 3-2.5"/></svg>Экономика</button>
+    <button class="nav-btn" data-panel="games"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="10" rx="5"/><path d="M6 12h.01M9 12h3M15 10.5v3M17 12h.01"/></svg>Игры чата</button>
+    <button class="nav-btn" data-panel="moderation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 5v6c0 5 3.4 9 8 11 4.6-2 8-6 8-11V5z"/></svg>Модерация</button>
+    <button class="nav-btn" data-panel="timers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>Таймеры</button>
+    <button class="nav-btn" data-panel="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Настройки</button>
+
+    <div class="sb-spacer"></div>
+    <div class="sb-status">
+      <div class="row"><span class="live-dot" id="liveDot"></span><span id="liveLabel">Оффлайн</span></div>
+      <div class="row" style="margin-bottom:0"><span>IRC:</span> <b id="ircStatusLabel" style="margin-left:auto">отключено</b></div>
+    </div>
+    <button class="sb-logout" id="btnLogout">Выйти</button>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h2 id="topTitle">Обзор</h2>
+        <div class="sub" id="topSub">Панель управления чат-ботом</div>
+      </div>
+      <div class="signal" id="signal"></div>
+    </div>
+
+    <!-- ===== OVERVIEW ===== -->
+    <section class="panel active" id="panel-overview">
+      <div class="grid5" style="margin-bottom:14px">
+        <div class="stat-card"><div class="label">Статус стрима</div><div class="val" id="stOnline">—</div></div>
+        <div class="stat-card"><div class="label">Аптайм</div><div class="val" id="stUptime">—</div></div>
+        <div class="stat-card"><div class="label">Зрителей в чате</div><div class="val" id="stChatters">—</div></div>
+        <div class="stat-card"><div class="label">Сообщений в чате</div><div class="val" id="stMsgs">0</div></div>
+        <div class="stat-card"><div class="label">Уникальных за сессию</div><div class="val" id="stUsers">0</div></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <h3 class="section-title">Стрим</h3>
+          <div id="streamInfoBox" class="empty">Данные загружаются…</div>
+        </div>
+        <div class="card">
+          <h3 class="section-title">Топ по очкам</h3>
+          <div id="overviewTop"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h3 class="section-title">Быстрые действия</h3>
+        <div style="display:flex; gap:10px; flex-wrap:wrap">
+          <button class="btn" id="qaShoutout">📣 Отправить приветствие чату</button>
+          <button class="btn" id="qaSlowmode">🐢 Slow mode 10с</button>
+          <button class="btn" id="qaClear">🧹 Очистить чат</button>
+          <button class="btn primary" id="qaGoChat">💬 Открыть чат</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CHAT ===== -->
+    <section class="panel" id="panel-chat">
+      <div class="two-col">
+        <div class="card">
+          <h3 class="section-title">Живой чат</h3>
+          <div class="chatlog" id="chatlog"></div>
+          <div class="chatbar">
+            <input type="text" id="chatInput" placeholder="Написать в чат как бот…" maxlength="480">
+            <button id="chatSend">Отправить</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3 class="section-title">Модератор-команды</h3>
+          <div class="hint" style="margin-bottom:10px">Работают только если аккаунт бота — модератор/стример канала.</div>
+          <div class="field"><label>Никнейм пользователя</label><input type="text" id="modUser" placeholder="username"></div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px">
+            <button class="btn sm" data-mod="timeout:60">Тайм-аут 1м</button>
+            <button class="btn sm" data-mod="timeout:600">Тайм-аут 10м</button>
+            <button class="btn sm danger" data-mod="ban">Бан</button>
+            <button class="btn sm" data-mod="unban">Разбан</button>
+            <button class="btn sm" data-mod="vip">Выдать VIP</button>
+            <button class="btn sm" data-mod="mod">Выдать мода</button>
+          </div>
+          <div class="divider"></div>
+          <h3 class="section-title">Активность чата</h3>
+          <div id="activeChatters" class="empty">Пока никто не писал</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== COMMANDS ===== -->
+    <section class="panel" id="panel-commands">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px">
+          <h3 class="section-title" style="margin-bottom:0">Свои команды</h3>
+          <button class="btn primary sm" id="btnAddCmd">+ Новая команда</button>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Префикс команд</label><input type="text" id="cmdPrefix" maxlength="3" style="max-width:100px"></div>
+          <div class="field"><label>Глобальный кулдаун (сек)</label><input type="number" id="cmdGlobalCd" min="0" style="max-width:140px"></div>
+        </div>
+        <div id="cmdList"></div>
+      </div>
+    </section>
+
+    <!-- ===== ECONOMY ===== -->
+    <section class="panel" id="panel-economy">
+      <div class="two-col">
+        <div class="card">
+          <h3 class="section-title">Настройки очков</h3>
+          <div class="field"><label>Название валюты</label><input type="text" id="ecoName"></div>
+          <div class="field-row">
+            <div class="field"><label>Очков за минуту в чате</label><input type="number" id="ecoRate" min="0"></div>
+            <div class="field"><label>Бонус за сообщение</label><input type="number" id="ecoMsgBonus" min="0"></div>
+          </div>
+          <div class="hint">Очки начисляются автоматически всем, кто пишет в чат или присутствует на стриме, пока бот подключён.</div>
+          <div class="divider"></div>
+          <h3 class="section-title">Команды экономики</h3>
+          <div class="ldesc" style="line-height:1.9">
+            <span class="tag">!points</span> баланс &nbsp;
+            <span class="tag">!top</span> топ-10 &nbsp;
+            <span class="tag">!give ник сумма</span> перевод &nbsp;
+            <span class="tag">!gamble сумма</span> ставка &nbsp;
+            <span class="tag">!slots сумма</span> слоты
+          </div>
+        </div>
+        <div class="card">
+          <h3 class="section-title">Топ зрителей</h3>
+          <div id="ecoLeaderboard"></div>
+          <div class="divider"></div>
+          <div class="field"><label>Выдать очки вручную</label>
+            <div class="field-row">
+              <input type="text" id="ecoManualUser" placeholder="ник" style="flex:1">
+              <input type="number" id="ecoManualAmt" placeholder="сумма" style="max-width:110px">
+              <button class="btn sm" id="ecoManualBtn">Выдать</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== GAMES ===== -->
+    <section class="panel" id="panel-games">
+      <div class="grid2">
+        <div class="card">
+          <h3 class="section-title">🔤 Анаграммы</h3>
+          <div class="hint" style="margin-bottom:10px">Команда <b>!anagram</b> запускает игру, зрители отгадывают через <b>!guess слово</b>.</div>
+          <div class="field"><label>Слова (через запятую)</label><textarea id="anagramWords"></textarea></div>
+          <div class="field"><label>Награда за победу</label><input type="number" id="anagramReward" min="0"></div>
+          <div id="anagramStatus" class="hint"></div>
+        </div>
+        <div class="card">
+          <h3 class="section-title">➗ Математика</h3>
+          <div class="hint" style="margin-bottom:10px">Команда <b>!math</b> задаёт пример, первый правильный ответ в чат побеждает.</div>
+          <div class="field-row">
+            <div class="field"><label>Макс. число</label><input type="number" id="mathMax" min="2"></div>
+            <div class="field"><label>Награда за победу</label><input type="number" id="mathReward" min="0"></div>
+          </div>
+          <div id="mathStatus" class="hint"></div>
+        </div>
+        <div class="card">
+          <h3 class="section-title">🗳 Опрос</h3>
+          <div class="field"><label>Вопрос</label><input type="text" id="pollQuestion" placeholder="Что стримим дальше?"></div>
+          <div class="field"><label>Варианты (через запятую, до 5)</label><input type="text" id="pollOptions" placeholder="Вариант 1, Вариант 2, Вариант 3"></div>
+          <button class="btn primary sm" id="pollStart">Запустить опрос</button>
+          <button class="btn sm" id="pollStop">Завершить</button>
+          <div id="pollStatus" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <h3 class="section-title">🎁 Розыгрыш</h3>
+          <div class="field"><label>Ключевое слово для участия</label><input type="text" id="giveawayKeyword" value="!enter"></div>
+          <button class="btn primary sm" id="giveawayStart">Начать розыгрыш</button>
+          <button class="btn sm" id="giveawayPick">Выбрать победителя</button>
+          <button class="btn sm danger" id="giveawayStop">Остановить</button>
+          <div id="giveawayStatus" style="margin-top:12px"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== MODERATION ===== -->
+    <section class="panel" id="panel-moderation">
+      <div class="two-col">
+        <div class="card">
+          <h3 class="section-title">Автомодерация</h3>
+          <label class="switch" style="margin-bottom:14px"><input type="checkbox" id="modEnabled"><span class="track"></span> Включить фильтры</label>
+          <div class="field"><label>Запрещённые слова (через запятую)</label><textarea id="modBadwords" placeholder="слово1, слово2"></textarea></div>
+          <label class="switch" style="margin-bottom:10px"><input type="checkbox" id="modLinks"><span class="track"></span> Удалять сообщения со ссылками</label><br>
+          <div class="field-row">
+            <div class="field"><label>Лимит CAPS (%)</label><input type="number" id="modCaps" min="0" max="100"></div>
+            <div class="field"><label>Макс. повторов подряд</label><input type="number" id="modRepeat" min="1"></div>
+          </div>
+          <div class="field"><label>Действие при нарушении</label>
+            <select id="modAction">
+              <option value="delete">Удалить сообщение</option>
+              <option value="timeout">Тайм-аут 60с</option>
+              <option value="warn">Только предупреждение в чат</option>
+            </select>
+          </div>
+          <div class="hint">Модераторы, вип и стример не проверяются фильтрами.</div>
+        </div>
+        <div class="card">
+          <h3 class="section-title">Журнал модерации</h3>
+          <div id="modLog" class="empty">Событий пока нет</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== TIMERS ===== -->
+    <section class="panel" id="panel-timers">
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px">
+          <h3 class="section-title" style="margin-bottom:0">Автосообщения</h3>
+          <button class="btn primary sm" id="btnAddTimer">+ Новый таймер</button>
+        </div>
+        <div class="hint" style="margin-bottom:12px">Сообщения отправляются по кругу с заданным интервалом, только когда стрим онлайн и в чате есть активность.</div>
+        <div id="timerList"></div>
+      </div>
+    </section>
+
+    <!-- ===== SETTINGS ===== -->
+    <section class="panel" id="panel-settings">
+      <div class="two-col">
+        <div class="card">
+          <h3 class="section-title">Канал</h3>
+          <div class="field"><label>Канал для подключения</label><input type="text" id="settChannel"></div>
+          <div class="hint">По умолчанию — канал аккаунта, которым вы вошли. Если бот работает от отдельного аккаунта-бота, укажите канал стримера здесь и убедитесь, что бот назначен модератором.</div>
+          <button class="btn primary sm" id="settReconnect" style="margin-top:12px">Переподключиться</button>
+        </div>
+        <div class="card">
+          <h3 class="section-title">Аккаунт</h3>
+          <div class="ldesc">Вы вошли как: <b id="accLogin" class="mono">—</b></div>
+          <div class="ldesc" style="margin-top:6px">Выданные права:</div>
+          <div id="accScopes" style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h3 class="section-title">Данные</h3>
+        <div style="display:flex; gap:10px; flex-wrap:wrap">
+          <button class="btn sm" id="exportData">⭳ Экспорт настроек (JSON)</button>
+          <button class="btn sm" id="importDataBtn">⭱ Импорт настроек</button>
+          <input type="file" id="importDataFile" accept="application/json" class="hidden">
+          <button class="btn sm danger" id="wipeData">Сбросить все данные канала</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+<div id="modalRoot"></div>
+
+<script>
+/* =====================================================================
+   LEIMTWITCHBOT — клиентский Twitch чат-бот (OAuth + IRC WebSocket)
+   ===================================================================== */
+const CLIENT_ID = 'vz8illvf8c3u6bvnsxbd13h3as7arw';
+const SCOPES = ['chat:read','chat:edit','moderator:manage:banned_users','moderator:manage:chat_messages','moderator:read:chatters','moderator:read:followers','channel:read:subscriptions'];
+
+function defaultRedirect(){
+  return location.origin + location.pathname;
+}
+
+/* ---------- toast ---------- */
+function toast(msg, type){
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type ? ' '+type : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='.3s'; setTimeout(()=>el.remove(),300); }, 3800);
+}
+
+/* ---------- storage helpers ---------- */
+const Store = {
+  raw(key, fallback){
+    try{ const v = localStorage.getItem(key); return v===null ? fallback : JSON.parse(v); }catch(e){ return fallback; }
+  },
+  setRaw(key, val){ localStorage.setItem(key, JSON.stringify(val)); },
+  ns(channel){ return 'ltb:'+(channel||'_')+':'; }
+};
+
+let CHANNEL = null; // lowercase channel login the bot joins
+let AUTH = null; // {token, login, userId, scopes}
+
+function nsKey(suffix){ return Store.ns(CHANNEL) + suffix; }
+function load(suffix, fallback){ return Store.raw(nsKey(suffix), fallback); }
+function save(suffix, val){ Store.setRaw(nsKey(suffix), val); }
+
+/* =====================================================================
+   AUTH — Twitch OAuth Implicit Flow
+   ===================================================================== */
+function beginLogin(){
+  const redirect = document.getElementById('redirectUriInput').value.trim() || defaultRedirect();
+  Store.setRaw('ltb_redirect_uri', redirect);
+  const params = new URLSearchParams({
+    client_id: CLIENT_ID,
+    redirect_uri: redirect,
+    response_type: 'token',
+    scope: SCOPES.join(' '),
+    force_verify: 'true'
+  });
+  location.href = 'https://id.twitch.tv/oauth2/authorize?' + params.toString();
+}
+
+async function validateToken(token){
+  const res = await fetch('https://id.twitch.tv/oauth2/validate', { headers: { Authorization: 'OAuth ' + token } });
+  if(!res.ok) throw new Error('invalid_token');
+  return res.json();
+}
+
+async function tryRestoreAuth(){
+  // 1. check URL hash for fresh token
+  if(location.hash && location.hash.includes('access_token')){
+    const hash = new URLSearchParams(location.hash.slice(1));
+    const token = hash.get('access_token');
+    if(token){
+      try{
+        const v = await validateToken(token);
+        AUTH = { token, login: v.login.toLowerCase(), userId: v.user_id, scopes: v.scopes || [] };
+        Store.setRaw('ltb_auth', AUTH);
+        history.replaceState(null, '', location.pathname + location.search);
+      }catch(e){ toast('Не удалось подтвердить токен Twitch', 'err'); }
+    }
+  }
+  // 2. else restore from storage
+  if(!AUTH){
+    const stored = Store.raw('ltb_auth', null);
+    if(stored){
+      try{
+        const v = await validateToken(stored.token);
+        AUTH = { token: stored.token, login: v.login.toLowerCase(), userId: v.user_id, scopes: v.scopes || [] };
+      }catch(e){
+        localStorage.removeItem('ltb_auth');
+      }
+    }
+  }
+  return AUTH;
+}
+
+function logout(){
+  localStorage.removeItem('ltb_auth');
+  ircDisconnectFinal();
+  location.reload();
+}
+
+/* =====================================================================
+   HELIX API
+   ===================================================================== */
+async function helix(path, opts){
+  opts = opts || {};
+  const res = await fetch('https://api.twitch.tv/helix' + path, Object.assign({
+    headers: Object.assign({
+      'Client-Id': CLIENT_ID,
+      'Authorization': 'Bearer ' + AUTH.token
+    }, opts.headers||{})
+  }, opts));
+  if(res.status === 401){ toast('Токен истёк, войдите заново', 'err'); throw new Error('unauthorized'); }
+  if(!res.ok){ throw new Error('helix_error_'+res.status); }
+  if(res.status === 204) return null;
+  return res.json();
+}
+
+let broadcasterId = null;
+async function resolveBroadcasterId(){
+  try{
+    const data = await helix('/users?login=' + encodeURIComponent(CHANNEL));
+    if(data.data && data.data[0]) broadcasterId = data.data[0].id;
+  }catch(e){ /* ignore */ }
+}
+
+async function fetchStreamInfo(){
+  try{
+    const data = await helix('/streams?user_login=' + encodeURIComponent(CHANNEL));
+    return (data.data && data.data[0]) || null;
+  }catch(e){ return null; }
+}
+
+async function fetchChattersCount(){
+  if(!broadcasterId) return null;
+  try{
+    const data = await helix(`/chat/chatters?broadcaster_id=${broadcasterId}&moderator_id=${AUTH.userId}&first=1`);
+    return typeof data.total === 'number' ? data.total : null;
+  }catch(e){ return null; } // бот не модератор канала — молча пропускаем
+}
+
+/* =====================================================================
+   IRC — WebSocket connection to Twitch chat
+   ===================================================================== */
+const IRC = {
+  ws: null,
+  connected: false,
+  msgCount: 0,
+  uniqueUsers: new Set(),
+  activity: [], // timestamps for signal graph
+  intentionalClose: false,
+  reconnectDelay: 2000,
+  reconnectTimer: null,
+};
+
+function parseIRC(raw){
+  let tags = {};
+  let rest = raw;
+  if(raw.startsWith('@')){
+    const sp = raw.indexOf(' ');
+    const tagStr = raw.slice(1, sp);
+    rest = raw.slice(sp+1);
+    tagStr.split(';').forEach(kv=>{
+      const idx = kv.indexOf('=');
+      const k = kv.slice(0,idx), v = kv.slice(idx+1);
+      tags[k] = v;
+    });
+  }
+  let prefix = '';
+  if(rest.startsWith(':')){
+    const sp = rest.indexOf(' ');
+    prefix = rest.slice(1, sp);
+    rest = rest.slice(sp+1);
+  }
+  let trailing = '';
+  const tIdx = rest.indexOf(' :');
+  let paramPart = rest;
+  if(tIdx !== -1){
+    trailing = rest.slice(tIdx+2);
+    paramPart = rest.slice(0, tIdx);
+  }
+  const parts = paramPart.trim().split(' ').filter(Boolean);
+  const command = parts.shift();
+  return { tags, prefix, command, params: parts, trailing };
+}
+
+function ircConnect(){
+  if(!AUTH) return;
+  IRC.intentionalClose = false;
+  if(IRC.reconnectTimer){ clearTimeout(IRC.reconnectTimer); IRC.reconnectTimer = null; }
+  if(IRC.ws) { IRC.intentionalClose = true; try{ IRC.ws.close(); }catch(e){} IRC.intentionalClose = false; }
+  setIrcStatus('подключение…');
+  const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+  IRC.ws = ws;
+  ws.onopen = ()=>{
+    ws.send('CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership');
+    ws.send('PASS oauth:' + AUTH.token);
+    ws.send('NICK ' + AUTH.login);
+    ws.send('JOIN #' + CHANNEL);
+  };
+  ws.onmessage = (ev)=>{
+    ev.data.split('\r\n').filter(Boolean).forEach(line=>handleIrcLine(line));
+  };
+  ws.onclose = ()=>{
+    IRC.connected = false;
+    setIrcStatus('отключено');
+    setLive(false, null);
+    if(!IRC.intentionalClose){
+      setIrcStatus('переподключение…');
+      IRC.reconnectTimer = setTimeout(()=>{
+        IRC.reconnectDelay = Math.min(IRC.reconnectDelay * 1.6, 30000);
+        ircConnect();
+      }, IRC.reconnectDelay);
+    }
+  };
+  ws.onerror = ()=>{ setIrcStatus('ошибка соединения'); };
+}
+function ircDisconnectFinal(){
+  IRC.intentionalClose = true;
+  if(IRC.reconnectTimer){ clearTimeout(IRC.reconnectTimer); IRC.reconnectTimer = null; }
+  if(IRC.ws) try{ IRC.ws.close(); }catch(e){}
+}
+
+function setIrcStatus(text){
+  const el = document.getElementById('ircStatusLabel');
+  if(el) el.textContent = text;
+}
+
+function handleIrcLine(line){
+  if(line.startsWith('PING')){ IRC.ws.send('PONG :tmi.twitch.tv'); return; }
+  const msg = parseIRC(line);
+  switch(msg.command){
+    case '001':
+      IRC.connected = true;
+      IRC.reconnectDelay = 2000;
+      setIrcStatus('подключено');
+      toast('Бот подключён к чату #' + CHANNEL, 'ok');
+      break;
+    case 'PRIVMSG':
+      onChatMessage(msg);
+      break;
+    case 'CLEARCHAT':
+      onClearChat(msg);
+      break;
+    case 'USERNOTICE':
+      onUserNotice(msg);
+      break;
+    case 'NOTICE':
+      if(msg.trailing) pushChatLine({event:true, text: msg.trailing});
+      break;
+    case 'ROOMSTATE':
+      break;
+  }
+}
+
+function sendChat(text){
+  if(!IRC.ws || !IRC.connected) { toast('Бот не подключён к чату', 'err'); return; }
+  IRC.ws.send('PRIVMSG #' + CHANNEL + ' :' + text);
+  if(!text.startsWith('/') && !text.startsWith('.')){
+    pushChatLine({username: AUTH.login, displayName: AUTH.login, message:text, color:'#8B6CFA', badges:{broadcaster: CHANNEL===AUTH.login}});
+  }
+}
+function sendModCmd(cmd){ sendChat('/' + cmd); }
+
+/* =====================================================================
+   CHAT HANDLING / RENDER
+   ===================================================================== */
+function pushChatLine(data){
+  const log = document.getElementById('chatlog');
+  const div = document.createElement('div');
+  const ts = new Date().toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+  if(data.event){
+    div.className = 'chat-line event';
+    div.innerHTML = `<span class="ts">${ts}</span>${escapeHtml(data.text)}`;
+  } else {
+    div.className = 'chat-line';
+    let badges = '';
+    if(data.badges){
+      if(data.badges.broadcaster) badges += '<span class="badge broadcaster">STREAMER</span>';
+      else if(data.badges.mod) badges += '<span class="badge mod">MOD</span>';
+      if(data.badges.vip) badges += '<span class="badge vip">VIP</span>';
+      if(data.badges.subscriber) badges += '<span class="badge sub">SUB</span>';
+    }
+    const color = data.color && data.color !== '' ? data.color : '#8985A3';
+    div.innerHTML = `<span class="ts">${ts}</span>${badges}<span class="uname" style="color:${color}">${escapeHtml(data.displayName||data.username)}</span>: ${escapeHtml(data.message)}`;
+  }
+  log.appendChild(div);
+  while(log.children.length > 300) log.removeChild(log.firstChild);
+  log.scrollTop = log.scrollHeight;
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+let ACTIVE_CHATTERS = new Map(); // username -> lastSeen ts
+
+function onChatMessage(msg){
+  const tags = msg.tags;
+  const username = (msg.prefix.split('!')[0]) || tags['display-name']?.toLowerCase() || 'unknown';
+  const displayName = tags['display-name'] || username;
+  const message = msg.trailing;
+  const badgesRaw = tags['badges'] || '';
+  const badges = {
+    broadcaster: badgesRaw.includes('broadcaster'),
+    mod: tags['mod'] === '1' || badgesRaw.includes('moderator'),
+    subscriber: tags['subscriber'] === '1' || badgesRaw.includes('subscriber'),
+    vip: badgesRaw.includes('vip')
+  };
+  const isPrivileged = badges.broadcaster || badges.mod || badges.vip;
+
+  IRC.msgCount++;
+  IRC.uniqueUsers.add(username);
+  IRC.activity.push(Date.now());
+  ACTIVE_CHATTERS.set(username, {ts: Date.now(), displayName, badges});
+
+  pushChatLine({username, displayName, message, color: tags['color'], badges});
+  updateOverviewStats();
+  renderActiveChatters();
+
+  // moderation
+  if(!isPrivileged && checkModeration(message, username, displayName)) return;
+
+  // economy: passive per-message bonus
+  Economy.onMessage(username, displayName);
+
+  // games: check answers
+  Games.onMessage(username, displayName, message, badges);
+
+  // commands
+  Commands.onMessage(username, displayName, message, badges);
+}
+
+function onClearChat(msg){
+  const user = msg.trailing;
+  if(user) pushChatLine({event:true, text: `⛔ ${user} получил тайм-аут/бан`});
+}
+function onUserNotice(msg){
+  const t = msg.tags['msg-id'];
+  const login = msg.tags['login'] || msg.tags['display-name'] || '';
+  if(t === 'sub' || t === 'resub') pushChatLine({event:true, text:`⭐ ${login} оформил(а) подписку!`});
+  else if(t === 'subgift') pushChatLine({event:true, text:`🎁 ${login} подарил(а) подписку`});
+  else if(t === 'raid') pushChatLine({event:true, text:`🚀 Рейд от ${login}!`});
+  if(msg.trailing) pushChatLine({event:true, text: msg.trailing});
+}
+
+function renderActiveChatters(){
+  const box = document.getElementById('activeChatters');
+  const now = Date.now();
+  const entries = [...ACTIVE_CHATTERS.entries()].filter(([,v])=> now - v.ts < 10*60*1000).sort((a,b)=>b[1].ts-a[1].ts).slice(0,30);
+  if(!entries.length){ box.innerHTML = '<div class="empty">Пока никто не писал</div>'; return; }
+  box.innerHTML = entries.map(([u,v])=>`<span class="tag on" style="margin:0 6px 6px 0; display:inline-block">${escapeHtml(v.displayName)}</span>`).join('');
+}
+
+/* =====================================================================
+   MODERATION
+   ===================================================================== */
+function getModSettings(){
+  return load('mod_settings', {
+    enabled:false, badwords:[], links:false, capsLimit:80, repeatLimit:5, action:'delete'
+  });
+}
+let lastMsgByUser = {};
+function checkModeration(message, username, displayName){
+  const s = getModSettings();
+  if(!s.enabled) return false;
+  let violated = null;
+
+  const low = message.toLowerCase();
+  if(s.badwords && s.badwords.length){
+    for(const w of s.badwords){
+      if(w && low.includes(w.toLowerCase())){ violated = 'запрещённое слово'; break; }
+    }
+  }
+  if(!violated && s.links && /(https?:\/\/|www\.|\.(com|net|ru|tv|gg|io|xyz)\b)/i.test(message)){
+    violated = 'ссылка';
+  }
+  if(!violated && s.capsLimit < 100){
+    const letters = message.replace(/[^a-zA-Zа-яА-ЯёЁ]/g,'');
+    if(letters.length >= 8){
+      const caps = letters.replace(/[^A-ZА-ЯЁ]/g,'').length;
+      if((caps/letters.length)*100 > s.capsLimit) violated = 'капс';
+    }
+  }
+  if(!violated && s.repeatLimit){
+    const prev = lastMsgByUser[username];
+    lastMsgByUser[username] = { text: low, count: prev && prev.text===low ? prev.count+1 : 1 };
+    if(lastMsgByUser[username].count > s.repeatLimit) violated = 'спам/повтор';
+  } else {
+    lastMsgByUser[username] = { text: low, count: 1 };
+  }
+
+  if(violated){
+    logMod(`${displayName}: ${violated} → ${s.action}`);
+    if(s.action === 'delete') sendModCmd('timeout ' + username + ' 1 ' + violated); // brief timeout as delete-equivalent
+    else if(s.action === 'timeout') sendModCmd('timeout ' + username + ' 60 ' + violated);
+    else sendChat(`@${displayName}, пожалуйста, соблюдай правила чата (${violated}).`);
+    return true;
+  }
+  return false;
+}
+function logMod(text){
+  const box = document.getElementById('modLog');
+  if(box.querySelector('.empty')) box.innerHTML = '';
+  const div = document.createElement('div');
+  div.className = 'chat-line mono';
+  div.style.fontSize = '12px';
+  div.textContent = new Date().toLocaleTimeString('ru-RU') + ' — ' + text;
+  box.prepend(div);
+}
+
+/* =====================================================================
+   ECONOMY (points)
+   ===================================================================== */
+const Economy = {
+  settings(){ return load('eco_settings', {name:'очки', rate:1, msgBonus:1}); },
+  balances(){ return load('eco_balances', {}); },
+  saveBalances(b){ save('eco_balances', b); },
+  get(user){ return this.balances()[user] || 0; },
+  add(user, amt){
+    const b = this.balances();
+    b[user] = Math.max(0, Math.round((b[user]||0) + amt));
+    this.saveBalances(b);
+    return b[user];
+  },
+  onMessage(username, displayName){
+    const s = this.settings();
+    this.add(username, s.msgBonus || 0);
+    const b = this.balances();
+    b[username+'__name'] = displayName;
+    this.saveBalances(b);
+  },
+  top(n){
+    const b = this.balances();
+    return Object.entries(b).filter(([k])=>!k.endsWith('__name')).sort((a,b2)=>b2[1]-a[1]).slice(0,n||10)
+      .map(([user,pts])=>({user, pts, name: b[user+'__name']||user}));
+  }
+};
+
+let ecoTickTimer = null;
+function startEconomyTicker(){
+  if(ecoTickTimer) clearInterval(ecoTickTimer);
+  ecoTickTimer = setInterval(()=>{
+    const s = Economy.settings();
+    if(!s.rate) return;
+    const now = Date.now();
+    ACTIVE_CHATTERS.forEach((v,u)=>{
+      if(now - v.ts < 6*60*1000){ Economy.add(u, s.rate); }
+    });
+    renderEconomyPanel();
+    renderOverviewTop();
+  }, 60*1000);
+}
+
+/* =====================================================================
+   COMMANDS
+   ===================================================================== */
+const Commands = {
+  settings(){ return load('cmd_settings', {prefix:'!', globalCooldown:3}); },
+  list(){ return load('cmd_list', DEFAULT_COMMANDS()); },
+  saveList(l){ save('cmd_list', l); },
+  cooldowns:{},
+  onMessage(username, displayName, message, badges){
+    const s = this.settings();
+    const prefix = s.prefix || '!';
+    if(!message.startsWith(prefix)) return;
+    const parts = message.slice(prefix.length).trim().split(/\s+/);
+    const name = parts[0].toLowerCase();
+    const args = parts.slice(1);
+    if(!name) return;
+
+    if(BUILTIN_COMMANDS[name]){
+      BUILTIN_COMMANDS[name](username, displayName, args, badges);
+      return;
+    }
+
+    const cmd = this.list().find(c=>c.name.toLowerCase()===name && c.enabled!==false);
+    if(!cmd) return;
+    if(cmd.permission === 'mod' && !(badges.mod||badges.broadcaster)) return;
+    if(cmd.permission === 'sub' && !(badges.subscriber||badges.mod||badges.broadcaster)) return;
+
+    const now = Date.now();
+    const cdKey = cmd.name;
+    const cd = (cmd.cooldown!=null ? cmd.cooldown : s.globalCooldown) * 1000;
+    if(this.cooldowns[cdKey] && now - this.cooldowns[cdKey] < cd) return;
+    this.cooldowns[cdKey] = now;
+
+    cmd.uses = (cmd.uses||0) + 1;
+    const list = this.list();
+    const idx = list.findIndex(c=>c.name===cmd.name);
+    if(idx>=0){ list[idx] = cmd; this.saveList(list); }
+
+    const resp = fillPlaceholders(cmd.response, {user: displayName, channel: CHANNEL, count: cmd.uses});
+    sendChat(resp);
+  }
+};
+
+function fillPlaceholders(text, ctx){
+  return text
+    .replace(/\{user\}/g, ctx.user||'')
+    .replace(/\{channel\}/g, ctx.channel||'')
+    .replace(/\{count\}/g, ctx.count!=null?ctx.count:'')
+    .replace(/\{random\}/g, Math.floor(Math.random()*100));
+}
+
+function DEFAULT_COMMANDS(){
+  return [
+    {name:'lurk', response:'{user} уходит в тень лурка 👀 спасибо, что с нами!', cooldown:5, permission:'everyone', enabled:true, uses:0},
+    {name:'hug', response:'{user} обнимает всех в чате 🤗', cooldown:5, permission:'everyone', enabled:true, uses:0},
+    {name:'discord', response:'Ссылка на Discord скоро будет здесь — попроси стримера обновить команду!', cooldown:10, permission:'everyone', enabled:true, uses:0},
+    {name:'so', response:'Загляните на канал {user}!', cooldown:5, permission:'mod', enabled:true, uses:0},
+  ];
+}
+
+const BUILTIN_COMMANDS = {
+  points: (u,d)=> sendChat(`@${d}, у тебя ${Economy.get(u)} ${Economy.settings().name}.`),
+  score: (u,d)=> BUILTIN_COMMANDS.points(u,d),
+  top: (u,d)=>{
+    const t = Economy.top(5);
+    if(!t.length){ sendChat('Пока никто не заработал очков.'); return; }
+    sendChat('🏆 Топ: ' + t.map((r,i)=>`${i+1}) ${r.name} — ${r.pts}`).join(' | '));
+  },
+  give: (u,d,args)=>{
+    const target = (args[0]||'').replace('@','').toLowerCase();
+    const amt = parseInt(args[1],10);
+    if(!target || !amt || amt<=0){ sendChat(`@${d}, используй: !give ник сумма`); return; }
+    if(Economy.get(u) < amt){ sendChat(`@${d}, недостаточно очков.`); return; }
+    Economy.add(u, -amt); Economy.add(target, amt);
+    sendChat(`@${d} передал(а) ${amt} очков пользователю ${target} 💸`);
+    renderEconomyPanel();
+  },
+  gamble: (u,d,args)=>{
+    const bal = Economy.get(u);
+    const amt = args[0]==='all' ? bal : parseInt(args[0],10);
+    if(!amt || amt<=0 || amt>bal){ sendChat(`@${d}, укажи корректную ставку (баланс: ${bal}).`); return; }
+    const win = Math.random() < 0.45;
+    if(win){ Economy.add(u, amt); sendChat(`🎲 @${d} выиграл(а) ${amt} очков! Баланс: ${Economy.get(u)}`); }
+    else { Economy.add(u, -amt); sendChat(`🎲 @${d} проиграл(а) ${amt} очков. Баланс: ${Economy.get(u)}`); }
+    renderEconomyPanel();
+  },
+  slots: (u,d,args)=>{
+    const bal = Economy.get(u);
+    const amt = parseInt(args[0],10);
+    if(!amt || amt<=0 || amt>bal){ sendChat(`@${d}, укажи корректную ставку (баланс: ${bal}).`); return; }
+    const syms = ['🍒','🍋','🍇','⭐','💎','7️⃣'];
+    const roll = [0,0,0].map(()=>syms[Math.floor(Math.random()*syms.length)]);
+    let mult = 0;
+    if(roll[0]===roll[1] && roll[1]===roll[2]) mult = roll[0]==='7️⃣' ? 10 : roll[0]==='💎' ? 6 : 3;
+    else if(roll[0]===roll[1] || roll[1]===roll[2] || roll[0]===roll[2]) mult = 1.5;
+    const delta = Math.round(amt*mult) - amt;
+    Economy.add(u, delta);
+    sendChat(`🎰 [ ${roll.join(' | ')} ] @${d} ${delta>=0?'выигрыш':'проигрыш'} ${Math.abs(delta)} очков. Баланс: ${Economy.get(u)}`);
+    renderEconomyPanel();
+  },
+  anagram: (u,d,args,badges)=> Games.startAnagram(),
+  guess: (u,d,args)=> Games.checkAnagramGuess(u,d,args.join(' ')),
+  math: (u,d)=> Games.startMath(),
+  commands: (u,d)=>{
+    const list = Commands.list().filter(c=>c.enabled!==false).map(c=>Commands.settings().prefix+c.name);
+    const builtins = Object.keys(BUILTIN_COMMANDS).map(n=>Commands.settings().prefix+n);
+    sendChat('Доступные команды: ' + [...builtins, ...list].join(' '));
+  },
+  uptime: async (u,d)=>{
+    const info = await fetchStreamInfo();
+    if(!info){ sendChat('Стрим сейчас оффлайн.'); return; }
+    const mins = Math.floor((Date.now()-new Date(info.started_at).getTime())/60000);
+    sendChat(`⏱ Стрим идёт ${Math.floor(mins/60)}ч ${mins%60}м`);
+  },
+};
+
+/* =====================================================================
+   MINI-GAMES
+   ===================================================================== */
+const Games = {
+  anagram: null, // {word, scrambled}
+  math: null, // {a,b,op,answer}
+  poll: null,
+  giveaway: null,
+
+  onMessage(username, displayName, message, badges){
+    const low = message.trim().toLowerCase();
+    // poll voting: numbers 1-5
+    if(this.poll && /^[1-5]$/.test(low)){
+      const i = parseInt(low,10)-1;
+      if(this.poll.options[i]){
+        this.poll.votes[username] = i;
+        renderPoll();
+      }
+    }
+    // giveaway entries
+    if(this.giveaway && this.giveaway.active && low === this.giveaway.keyword.toLowerCase()){
+      if(!this.giveaway.entries.includes(username)){
+        this.giveaway.entries.push(username);
+        renderGiveaway();
+      }
+    }
+    // math answers
+    if(this.math && low === String(this.math.answer)){
+      const reward = parseInt(document.getElementById('mathReward').value,10) || 0;
+      Economy.add(username, reward);
+      sendChat(`✅ @${displayName} решил(а) пример правильно (+${reward})! Ответ: ${this.math.answer}`);
+      this.math = null;
+      document.getElementById('mathStatus').textContent = 'Игра завершена.';
+      renderEconomyPanel();
+    }
+  },
+
+  startAnagram(){
+    const words = (document.getElementById('anagramWords').value || '').split(',').map(w=>w.trim()).filter(Boolean);
+    if(!words.length){ sendChat('Список слов для анаграмм пуст — настрой его в панели «Игры чата».'); return; }
+    const word = words[Math.floor(Math.random()*words.length)];
+    const scrambled = scramble(word);
+    this.anagram = { word: word.toLowerCase(), scrambled };
+    sendChat(`🔤 Анаграмма! Расставь буквы правильно: ${scrambled.toUpperCase()} — ответ через !guess слово`);
+    document.getElementById('anagramStatus').textContent = `Идёт игра: ${scrambled.toUpperCase()}`;
+  },
+  checkAnagramGuess(username, displayName, guess){
+    if(!this.anagram || !guess) return;
+    if(guess.trim().toLowerCase() === this.anagram.word){
+      const reward = parseInt(document.getElementById('anagramReward').value,10) || 0;
+      Economy.add(username, reward);
+      sendChat(`🎉 @${displayName} угадал(а) слово «${this.anagram.word}»! +${reward} очков`);
+      this.anagram = null;
+      document.getElementById('anagramStatus').textContent = 'Игра завершена.';
+      renderEconomyPanel();
+    }
+  },
+  startMath(){
+    const max = parseInt(document.getElementById('mathMax').value,10) || 20;
+    const a = 1+Math.floor(Math.random()*max), b = 1+Math.floor(Math.random()*max);
+    const ops = ['+','-','×'];
+    const op = ops[Math.floor(Math.random()*ops.length)];
+    let answer;
+    if(op==='+') answer = a+b; else if(op==='-') answer = a-b; else answer = a*b;
+    this.math = {a,b,op,answer};
+    sendChat(`➗ Реши пример первым: ${a} ${op} ${b} = ?`);
+    document.getElementById('mathStatus').textContent = `Идёт игра: ${a} ${op} ${b} = ?`;
+  }
+};
+
+function scramble(word){
+  const arr = word.split('');
+  let s = word;
+  let tries = 0;
+  while(s.toLowerCase()===word.toLowerCase() && tries<20){
+    for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+    s = arr.join(''); tries++;
+  }
+  return s;
+}
+
+function renderPoll(){
+  const box = document.getElementById('pollStatus');
+  if(!Games.poll){ box.innerHTML=''; return; }
+  const p = Games.poll;
+  const counts = p.options.map((_,i)=>Object.values(p.votes).filter(v=>v===i).length);
+  const total = counts.reduce((a,b)=>a+b,0) || 1;
+  box.innerHTML = `<div style="font-weight:600; margin-bottom:8px">${escapeHtml(p.question)}</div>` +
+    p.options.map((o,i)=>{
+      const pct = Math.round(counts[i]/total*100);
+      return `<div style="margin-bottom:6px"><div style="display:flex; justify-content:space-between; font-size:12px; color:var(--muted)"><span>${i+1}. ${escapeHtml(o)}</span><span>${counts[i]} (${pct}%)</span></div>
+      <div style="height:6px; background:var(--panel-3); border-radius:4px; overflow:hidden"><div style="height:100%; width:${pct}%; background:var(--violet)"></div></div></div>`;
+    }).join('');
+}
+function renderGiveaway(){
+  const box = document.getElementById('giveawayStatus');
+  if(!Games.giveaway){ box.innerHTML=''; return; }
+  const g = Games.giveaway;
+  box.innerHTML = `<div class="ldesc">Ключ: <b class="mono">${escapeHtml(g.keyword)}</b> · Участников: <b>${g.entries.length}</b> ${g.winner? '· Победитель: <b style=\"color:var(--cyan)\">'+escapeHtml(g.winner)+'</b>':''}</div>`;
+}
+
+/* =====================================================================
+   TIMERS
+   ===================================================================== */
+const Timers = {
+  list(){ return load('timer_list', []); },
+  saveList(l){ save('timer_list', l); },
+  handles: {},
+  startAll(){
+    Object.values(this.handles).forEach(h=>clearInterval(h));
+    this.handles = {};
+    this.list().forEach(t=>{
+      if(!t.enabled) return;
+      this.handles[t.id] = setInterval(()=>{
+        if(IRC.activity.filter(ts=>Date.now()-ts<5*60*1000).length===0) return; // skip if chat inactive
+        sendChat(t.message);
+      }, Math.max(30, t.interval)*1000);
+    });
+  }
+};
+
+/* =====================================================================
+   RENDER FUNCTIONS
+   ===================================================================== */
+function updateOverviewStats(){
+  document.getElementById('stMsgs').textContent = IRC.msgCount;
+  document.getElementById('stUsers').textContent = IRC.uniqueUsers.size;
+}
+
+function setLive(isLive, info){
+  document.getElementById('liveDot').classList.toggle('on', isLive);
+  document.getElementById('liveLabel').textContent = isLive ? 'В эфире' : 'Оффлайн';
+  document.getElementById('stOnline').innerHTML = isLive ? '🔴 <span style="font-size:13px">LIVE</span>' : '⚪ <span style="font-size:13px">Оффлайн</span>';
+  if(isLive && info){
+    const mins = Math.floor((Date.now()-new Date(info.started_at).getTime())/60000);
+    document.getElementById('stUptime').innerHTML = `${Math.floor(mins/60)}ч ${mins%60}м`;
+    document.getElementById('streamInfoBox').innerHTML = `
+      <div class="ldesc" style="font-size:13px; margin-bottom:6px"><b style="color:var(--text)">${escapeHtml(info.title||'')}</b></div>
+      <div class="ldesc">Категория: ${escapeHtml(info.game_name||'—')}</div>
+      <div class="ldesc">Зрителей: ${info.viewer_count}</div>`;
+  } else {
+    document.getElementById('stUptime').textContent = '—';
+    document.getElementById('streamInfoBox').innerHTML = '<div class="empty">Стрим сейчас оффлайн</div>';
+  }
+}
+
+function renderOverviewTop(){
+  const box = document.getElementById('overviewTop');
+  const top = Economy.top(5);
+  if(!top.length){ box.innerHTML = '<div class="empty">Пока нет данных</div>'; return; }
+  box.innerHTML = top.map((r,i)=>`<div class="lb-row"><div class="lb-rank">${i+1}</div><div class="lb-name">${escapeHtml(r.name)}</div><div class="lb-pts">${r.pts}</div></div>`).join('');
+}
+
+function renderEconomyPanel(){
+  const s = Economy.settings();
+  document.getElementById('ecoName').value = s.name;
+  document.getElementById('ecoRate').value = s.rate;
+  document.getElementById('ecoMsgBonus').value = s.msgBonus;
+  const box = document.getElementById('ecoLeaderboard');
+  const top = Economy.top(15);
+  if(!top.length){ box.innerHTML = '<div class="empty">Пока нет данных</div>'; return; }
+  box.innerHTML = top.map((r,i)=>`<div class="lb-row"><div class="lb-rank">${i+1}</div><div class="lb-name">${escapeHtml(r.name)}</div><div class="lb-pts">${r.pts}</div></div>`).join('');
+  renderOverviewTop();
+}
+
+function renderCommandsPanel(){
+  const s = Commands.settings();
+  document.getElementById('cmdPrefix').value = s.prefix;
+  document.getElementById('cmdGlobalCd').value = s.globalCooldown;
+  const box = document.getElementById('cmdList');
+  const list = Commands.list();
+  if(!list.length){ box.innerHTML = '<div class="empty">Команд пока нет</div>'; return; }
+  box.innerHTML = list.map((c,i)=>`
+    <div class="list-item">
+      <div>
+        <div class="lname">${s.prefix}${escapeHtml(c.name)} <span class="tag" style="margin-left:6px">${c.permission==='mod'?'мод':c.permission==='sub'?'саб':'все'}</span> ${c.enabled===false?'<span class="tag">выкл</span>':''}</div>
+        <div class="ldesc">${escapeHtml(c.response)}</div>
+      </div>
+      <div class="lmeta">
+        <span class="tag">${c.uses||0} исп.</span>
+        <button class="btn sm" onclick="editCommand(${i})">✎</button>
+        <button class="btn sm danger" onclick="deleteCommand(${i})">✕</button>
+      </div>
+    </div>`).join('');
+}
+window.editCommand = function(i){
+  const list = Commands.list();
+  const c = list[i];
+  openCommandModal(c, (updated)=>{ list[i] = updated; Commands.saveList(list); renderCommandsPanel(); });
+};
+window.deleteCommand = function(i){
+  const list = Commands.list();
+  list.splice(i,1);
+  Commands.saveList(list);
+  renderCommandsPanel();
+};
+
+function renderTimersPanel(){
+  const box = document.getElementById('timerList');
+  const list = Timers.list();
+  if(!list.length){ box.innerHTML = '<div class="empty">Таймеров пока нет</div>'; return; }
+  box.innerHTML = list.map((t,i)=>`
+    <div class="list-item">
+      <div>
+        <div class="lname">Каждые ${t.interval}с ${t.enabled===false?'<span class="tag">выкл</span>':'<span class="tag on">вкл</span>'}</div>
+        <div class="ldesc">${escapeHtml(t.message)}</div>
+      </div>
+      <div class="lmeta">
+        <button class="btn sm" onclick="editTimer(${i})">✎</button>
+        <button class="btn sm danger" onclick="deleteTimer(${i})">✕</button>
+      </div>
+    </div>`).join('');
+}
+window.editTimer = function(i){
+  const list = Timers.list();
+  openTimerModal(list[i], (updated)=>{ list[i]=updated; Timers.saveList(list); renderTimersPanel(); Timers.startAll(); });
+};
+window.deleteTimer = function(i){
+  const list = Timers.list();
+  list.splice(i,1);
+  Timers.saveList(list);
+  renderTimersPanel();
+  Timers.startAll();
+};
+
+/* =====================================================================
+   MODALS
+   ===================================================================== */
+function openModal(html){
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `<div class="modal-bg" id="modalBg"><div class="modal">${html}</div></div>`;
+  document.getElementById('modalBg').addEventListener('click', (e)=>{ if(e.target.id==='modalBg') closeModal(); });
+}
+function closeModal(){ document.getElementById('modalRoot').innerHTML=''; }
+
+function openCommandModal(cmd, onSave){
+  cmd = cmd || {name:'', response:'', cooldown:5, permission:'everyone', enabled:true, uses:0};
+  openModal(`
+    <h3>${cmd.uses!==undefined && cmd.name ? 'Редактировать команду' : 'Новая команда'}</h3>
+    <div class="field"><label>Название (без префикса)</label><input type="text" id="mCmdName" value="${escapeHtml(cmd.name)}"></div>
+    <div class="field"><label>Ответ бота</label><textarea id="mCmdResp">${escapeHtml(cmd.response)}</textarea>
+      <div class="hint">Переменные: {user} {channel} {count} {random}</div></div>
+    <div class="field-row">
+      <div class="field"><label>Кулдаун (сек)</label><input type="number" id="mCmdCd" value="${cmd.cooldown}"></div>
+      <div class="field"><label>Доступ</label>
+        <select id="mCmdPerm">
+          <option value="everyone" ${cmd.permission==='everyone'?'selected':''}>Все</option>
+          <option value="sub" ${cmd.permission==='sub'?'selected':''}>Только сабы</option>
+          <option value="mod" ${cmd.permission==='mod'?'selected':''}>Только модераторы</option>
+        </select>
+      </div>
+    </div>
+    <label class="switch"><input type="checkbox" id="mCmdEnabled" ${cmd.enabled!==false?'checked':''}><span class="track"></span> Активна</label>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Отмена</button>
+      <button class="btn primary" id="mCmdSave">Сохранить</button>
+    </div>
+  `);
+  document.getElementById('mCmdSave').onclick = ()=>{
+    const name = document.getElementById('mCmdName').value.trim().toLowerCase().replace(/\s+/g,'');
+    const response = document.getElementById('mCmdResp').value.trim();
+    if(!name || !response){ toast('Заполни название и ответ', 'err'); return; }
+    if(BUILTIN_COMMANDS[name]){ toast('Это имя занято встроенной командой', 'err'); return; }
+    onSave({
+      name, response,
+      cooldown: parseInt(document.getElementById('mCmdCd').value,10)||0,
+      permission: document.getElementById('mCmdPerm').value,
+      enabled: document.getElementById('mCmdEnabled').checked,
+      uses: cmd.uses||0
+    });
+    closeModal();
+  };
+}
+
+function openTimerModal(timer, onSave){
+  timer = timer || {interval:600, message:'', enabled:true};
+  openModal(`
+    <h3>Таймер сообщения</h3>
+    <div class="field"><label>Сообщение</label><textarea id="mTmMsg">${escapeHtml(timer.message)}</textarea></div>
+    <div class="field"><label>Интервал (сек)</label><input type="number" id="mTmInt" value="${timer.interval}" min="30"></div>
+    <label class="switch"><input type="checkbox" id="mTmEnabled" ${timer.enabled!==false?'checked':''}><span class="track"></span> Активен</label>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Отмена</button>
+      <button class="btn primary" id="mTmSave">Сохранить</button>
+    </div>
+  `);
+  document.getElementById('mTmSave').onclick = ()=>{
+    const message = document.getElementById('mTmMsg').value.trim();
+    const interval = parseInt(document.getElementById('mTmInt').value,10)||600;
+    if(!message){ toast('Введи текст сообщения', 'err'); return; }
+    onSave({ id: timer.id || ('t'+Date.now()), message, interval, enabled: document.getElementById('mTmEnabled').checked });
+    closeModal();
+  };
+}
+
+/* =====================================================================
+   NAVIGATION
+   ===================================================================== */
+function switchPanel(name){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.panel===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active', p.id==='panel-'+name));
+  const titles = {overview:['Обзор','Общая статистика и быстрые действия'], chat:['Чат','Живой чат канала #'+CHANNEL], commands:['Команды','Настройка кастомных команд бота'], economy:['Экономика','Система очков зрителей'], games:['Игры чата','Интерактивные мини-игры для зрителей'], moderation:['Модерация','Автоматическая фильтрация чата'], timers:['Таймеры','Периодические автосообщения'], settings:['Настройки','Канал, аккаунт и данные']};
+  const t = titles[name] || ['LeimTwitchBot',''];
+  document.getElementById('topTitle').textContent = t[0];
+  document.getElementById('topSub').textContent = t[1];
+}
+document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click', ()=>switchPanel(b.dataset.panel)));
+
+/* =====================================================================
+   SIGNAL BAR (signature element)
+   ===================================================================== */
+function initSignal(){
+  const wrap = document.getElementById('signal');
+  const N = 22;
+  for(let i=0;i<N;i++){ const bar=document.createElement('i'); bar.style.height='4px'; wrap.appendChild(bar); }
+  setInterval(()=>{
+    IRC.activity = IRC.activity.filter(ts=>Date.now()-ts<10000);
+    const rate = IRC.activity.length;
+    [...wrap.children].forEach((bar)=>{
+      const h = 4 + Math.min(22, Math.random()*Math.min(22, rate*4+2));
+      bar.style.height = h+'px';
+      bar.style.opacity = rate>0 ? (0.4+Math.random()*0.6) : 0.25;
+    });
+  }, 260);
+}
+
+/* =====================================================================
+   WIRE UP UI CONTROLS
+   ===================================================================== */
+function wireControls(){
+  document.getElementById('chatSend').onclick = ()=>{
+    const inp = document.getElementById('chatInput');
+    if(inp.value.trim()){ sendChat(inp.value.trim()); inp.value=''; }
+  };
+  document.getElementById('chatInput').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('chatSend').click(); });
+
+  document.querySelectorAll('[data-mod]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const user = document.getElementById('modUser').value.trim();
+      if(!user){ toast('Укажи никнейм', 'err'); return; }
+      const [action, arg] = btn.dataset.mod.split(':');
+      const map = { timeout:`timeout ${user} ${arg}`, ban:`ban ${user}`, unban:`unban ${user}`, vip:`vip ${user}`, mod:`mod ${user}` };
+      sendModCmd(map[action]);
+      toast('Команда отправлена: /'+map[action]);
+    });
+  });
+
+  document.getElementById('qaShoutout').onclick = ()=> sendChat('👋 Всем привет в чате! Спасибо, что смотрите стрим 💜');
+  document.getElementById('qaSlowmode').onclick = ()=> sendModCmd('slow 10');
+  document.getElementById('qaClear').onclick = ()=> sendModCmd('clear');
+  document.getElementById('qaGoChat').onclick = ()=> switchPanel('chat');
+
+  document.getElementById('btnAddCmd').onclick = ()=> openCommandModal(null, (c)=>{
+    const list = Commands.list(); list.push(c); Commands.saveList(list); renderCommandsPanel();
+  });
+  ['cmdPrefix','cmdGlobalCd'].forEach(id=>{
+    document.getElementById(id).addEventListener('change', ()=>{
+      save('cmd_settings', { prefix: document.getElementById('cmdPrefix').value||'!', globalCooldown: parseInt(document.getElementById('cmdGlobalCd').value,10)||0 });
+    });
+  });
+
+  ['ecoName','ecoRate','ecoMsgBonus'].forEach(id=>{
+    document.getElementById(id).addEventListener('change', ()=>{
+      save('eco_settings', { name: document.getElementById('ecoName').value||'очки', rate: parseInt(document.getElementById('ecoRate').value,10)||0, msgBonus: parseInt(document.getElementById('ecoMsgBonus').value,10)||0 });
+    });
+  });
+  document.getElementById('ecoManualBtn').onclick = ()=>{
+    const u = document.getElementById('ecoManualUser').value.trim().toLowerCase();
+    const amt = parseInt(document.getElementById('ecoManualAmt').value,10);
+    if(!u || !amt){ toast('Укажи ник и сумму', 'err'); return; }
+    Economy.add(u, amt);
+    const b = Economy.balances(); if(!b[u+'__name']) { b[u+'__name']=u; Economy.saveBalances(b); }
+    toast(`Выдано ${amt} очков ${u}`, 'ok');
+    renderEconomyPanel();
+  };
+
+  ['anagramWords','anagramReward'].forEach(id=> document.getElementById(id).addEventListener('change', ()=>{
+    save('games_settings', Object.assign(load('games_settings',{}), {anagramWords:document.getElementById('anagramWords').value, anagramReward:document.getElementById('anagramReward').value}));
+  }));
+  ['mathMax','mathReward'].forEach(id=> document.getElementById(id).addEventListener('change', ()=>{
+    save('games_settings', Object.assign(load('games_settings',{}), {mathMax:document.getElementById('mathMax').value, mathReward:document.getElementById('mathReward').value}));
+  }));
+
+  document.getElementById('pollStart').onclick = ()=>{
+    const q = document.getElementById('pollQuestion').value.trim();
+    const opts = document.getElementById('pollOptions').value.split(',').map(s=>s.trim()).filter(Boolean).slice(0,5);
+    if(!q || opts.length<2){ toast('Нужен вопрос и минимум 2 варианта', 'err'); return; }
+    Games.poll = { question:q, options:opts, votes:{} };
+    sendChat(`🗳 Опрос: ${q} — ` + opts.map((o,i)=>`${i+1}) ${o}`).join(' | ') + ' — голосуй числом в чат!');
+    renderPoll();
+  };
+  document.getElementById('pollStop').onclick = ()=>{
+    if(Games.poll) sendChat('🗳 Опрос завершён! Результаты в панели бота.');
+    Games.poll = null; renderPoll();
+  };
+
+  document.getElementById('giveawayStart').onclick = ()=>{
+    const kw = document.getElementById('giveawayKeyword').value.trim() || '!enter';
+    Games.giveaway = { keyword:kw, entries:[], active:true, winner:null };
+    sendChat(`🎁 Розыгрыш начался! Напиши ${kw} в чат, чтобы поучаствовать.`);
+    renderGiveaway();
+  };
+  document.getElementById('giveawayPick').onclick = ()=>{
+    if(!Games.giveaway || !Games.giveaway.entries.length){ toast('Нет участников', 'err'); return; }
+    const w = Games.giveaway.entries[Math.floor(Math.random()*Games.giveaway.entries.length)];
+    Games.giveaway.winner = w;
+    sendChat(`🎉 Победитель розыгрыша: @${w} !`);
+    renderGiveaway();
+  };
+  document.getElementById('giveawayStop').onclick = ()=>{
+    Games.giveaway = null; renderGiveaway();
+  };
+
+  document.getElementById('modEnabled').addEventListener('change', saveModSettings);
+  document.getElementById('modLinks').addEventListener('change', saveModSettings);
+  document.getElementById('modBadwords').addEventListener('change', saveModSettings);
+  document.getElementById('modCaps').addEventListener('change', saveModSettings);
+  document.getElementById('modRepeat').addEventListener('change', saveModSettings);
+  document.getElementById('modAction').addEventListener('change', saveModSettings);
+
+  document.getElementById('btnAddTimer').onclick = ()=> openTimerModal(null, (t)=>{
+    const list = Timers.list(); list.push(t); Timers.saveList(list); renderTimersPanel(); Timers.startAll();
+  });
+
+  document.getElementById('settReconnect').onclick = ()=>{
+    const v = document.getElementById('settChannel').value.trim().toLowerCase();
+    if(v) CHANNEL = v;
+    Store.setRaw('ltb_channel', CHANNEL);
+    document.getElementById('sbChannel').textContent = '#'+CHANNEL;
+    ircConnect();
+    resolveBroadcasterId();
+    refreshStreamInfo();
+  };
+
+  document.getElementById('exportData').onclick = ()=>{
+    const data = {};
+    Object.keys(localStorage).filter(k=>k.startsWith(Store.ns(CHANNEL))).forEach(k=> data[k]=localStorage.getItem(k));
+    const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'leimtwitchbot-'+CHANNEL+'.json';
+    a.click();
+  };
+  document.getElementById('importDataBtn').onclick = ()=> document.getElementById('importDataFile').click();
+  document.getElementById('importDataFile').addEventListener('change', (e)=>{
+    const file = e.target.files[0]; if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      try{
+        const data = JSON.parse(reader.result);
+        Object.entries(data).forEach(([k,v])=> localStorage.setItem(k,v));
+        toast('Настройки импортированы, обновляю…', 'ok');
+        setTimeout(()=>location.reload(), 900);
+      }catch(err){ toast('Некорректный файл', 'err'); }
+    };
+    reader.readAsText(file);
+  });
+  document.getElementById('wipeData').onclick = ()=>{
+    if(!confirm('Удалить все настройки этого канала (команды, очки, таймеры)?')) return;
+    Object.keys(localStorage).filter(k=>k.startsWith(Store.ns(CHANNEL))).forEach(k=>localStorage.removeItem(k));
+    toast('Данные сброшены', 'ok');
+    setTimeout(()=>location.reload(), 700);
+  };
+
+  document.getElementById('btnLogout').onclick = logout;
+}
+function saveModSettings(){
+  save('mod_settings', {
+    enabled: document.getElementById('modEnabled').checked,
+    badwords: document.getElementById('modBadwords').value.split(',').map(s=>s.trim()).filter(Boolean),
+    links: document.getElementById('modLinks').checked,
+    capsLimit: parseInt(document.getElementById('modCaps').value,10)||100,
+    repeatLimit: parseInt(document.getElementById('modRepeat').value,10)||5,
+    action: document.getElementById('modAction').value
+  });
+}
+
+/* =====================================================================
+   INIT
+   ===================================================================== */
+async function refreshStreamInfo(){
+  const info = await fetchStreamInfo();
+  setLive(!!info, info);
+  const chattersEl = document.getElementById('stChatters');
+  const count = await fetchChattersCount();
+  chattersEl.textContent = count!=null ? count : '—';
+}
+
+function loadPanelsFromStorage(){
+  const s = Commands.settings();
+  document.getElementById('cmdPrefix').value = s.prefix;
+  document.getElementById('cmdGlobalCd').value = s.globalCooldown;
+  renderCommandsPanel();
+
+  renderEconomyPanel();
+
+  const gs = load('games_settings', {});
+  document.getElementById('anagramWords').value = gs.anagramWords || 'twitch, стример, чат, донат, рейд, подписка';
+  document.getElementById('anagramReward').value = gs.anagramReward!=null ? gs.anagramReward : 50;
+  document.getElementById('mathMax').value = gs.mathMax || 20;
+  document.getElementById('mathReward').value = gs.mathReward!=null ? gs.mathReward : 30;
+
+  const ms = getModSettings();
+  document.getElementById('modEnabled').checked = ms.enabled;
+  document.getElementById('modBadwords').value = (ms.badwords||[]).join(', ');
+  document.getElementById('modLinks').checked = ms.links;
+  document.getElementById('modCaps').value = ms.capsLimit;
+  document.getElementById('modRepeat').value = ms.repeatLimit;
+  document.getElementById('modAction').value = ms.action;
+
+  renderTimersPanel();
+
+  document.getElementById('settChannel').value = CHANNEL;
+  document.getElementById('accLogin').textContent = AUTH.login;
+  document.getElementById('accScopes').innerHTML = (AUTH.scopes||[]).map(s=>`<span class="tag">${s}</span>`).join('');
+  document.getElementById('sbChannel').textContent = '#'+CHANNEL;
+}
+
+async function boot(){
+  document.getElementById('redirectUriInput').value = Store.raw('ltb_redirect_uri', defaultRedirect());
+  document.getElementById('toggleAdv').addEventListener('click', ()=>{
+    document.getElementById('advSettings').classList.toggle('hidden');
+  });
+  document.getElementById('btnLogin').addEventListener('click', beginLogin);
+
+  await tryRestoreAuth();
+  if(!AUTH){
+    return; // stay on login screen
+  }
+  CHANNEL = Store.raw('ltb_channel', AUTH.login) || AUTH.login;
+
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').classList.add('active');
+
+  wireControls();
+  initSignal();
+  loadPanelsFromStorage();
+
+  ircConnect();
+  await resolveBroadcasterId();
+  await refreshStreamInfo();
+  setInterval(refreshStreamInfo, 60*1000);
+  startEconomyTicker();
+  Timers.startAll();
+
+  switchPanel('overview');
+}
+
+boot();
+</script>
+</body>
+</html>
