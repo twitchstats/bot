@@ -1,0 +1,2986 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LeimTwitchBot — панель управления</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%238B6CFA'/%3E%3Cstop offset='1' stop-color='%23FF4FA0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='%23121120'/%3E%3Crect x='2' y='2' width='28' height='28' rx='7' fill='url(%23g)'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-weight='700' font-size='16' fill='white' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#08080D;
+  --panel:#121120;
+  --panel-2:#1A1830;
+  --panel-3:#211E3A;
+  --border:#2A2645;
+  --text:#EDEAF7;
+  --muted:#8985A3;
+  --dim:#5F5B78;
+  --violet:#8B6CFA;
+  --violet-dim:#5B4CA8;
+  --magenta:#FF4FA0;
+  --cyan:#34E8C6;
+  --amber:#FFB454;
+  --danger:#FF5C7A;
+  --radius:14px;
+  --rig:linear-gradient(90deg,var(--cyan),var(--violet) 52%,var(--magenta));
+  --rig-soft:linear-gradient(90deg,rgba(52,232,198,.5),rgba(139,108,250,.5) 52%,rgba(255,79,160,.5));
+  --shadow-card:0 1px 0 rgba(255,255,255,.03) inset,0 18px 36px -26px rgba(0,0,0,.7);
+  --shadow-pop:0 24px 60px -18px rgba(0,0,0,.65);
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  background:
+    radial-gradient(1100px 600px at 85% -10%,rgba(139,108,250,.16),transparent 60%),
+    radial-gradient(900px 500px at -10% 110%,rgba(255,79,160,.10),transparent 60%),
+    radial-gradient(700px 500px at 60% 40%,rgba(52,232,198,.045),transparent 55%),
+    var(--bg);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  position:relative;
+}
+body::before{
+  content:"";position:fixed;inset:-10%;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(900px 500px at 20% 15%,rgba(139,108,250,.10),transparent 60%),
+    radial-gradient(800px 460px at 85% 85%,rgba(255,79,160,.07),transparent 60%);
+  animation:ambientDrift 26s ease-in-out infinite alternate;
+}
+@keyframes ambientDrift{from{transform:translate(0,0) scale(1);}to{transform:translate(2%,-2%) scale(1.04);}}
+body::after{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.035;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+#loginScreen,#app{position:relative;z-index:2;}
+::selection{background:var(--violet);color:#fff;}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--panel-3);border-radius:8px;}
+::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,var(--cyan),var(--violet));}
+h1,h2,h3,.display{font-family:'Chakra Petch',sans-serif;letter-spacing:.02em;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+a{color:inherit;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.hidden{display:none!important;}
+button,.nav-btn,.btn,input,select,textarea,a{transition:background-color .16s var(--ease),border-color .16s var(--ease),color .16s var(--ease),transform .16s var(--ease),box-shadow .16s var(--ease),opacity .16s var(--ease);}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--violet);outline-offset:2px;border-radius:6px;}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important;}
+}
+
+/* ============ LOGIN ============ */
+#loginScreen{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;padding:24px;
+}
+#loginScreen::before{
+  content:"";position:absolute;inset:-44px;pointer-events:none;
+  background-image:linear-gradient(rgba(139,108,250,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(139,108,250,.05) 1px,transparent 1px);
+  background-size:44px 44px;
+  mask-image:radial-gradient(700px 500px at 50% 40%,black,transparent 75%);
+  animation:gridDrift 22s linear infinite;
+}
+@keyframes gridDrift{from{background-position:0 0,0 0;}to{background-position:44px 44px,44px 44px;}}
+.login-card{
+  position:relative;z-index:1;max-width:540px;width:100%;
+  background:var(--panel);
+  border:1px solid var(--border);border-radius:20px;padding:44px 40px;
+  box-shadow:0 30px 80px -20px rgba(0,0,0,.6),0 0 0 1px rgba(139,108,250,.05);
+  animation:cardRise .5s var(--ease);
+}
+@keyframes cardRise{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.login-card::before{content:"";position:absolute;top:0;left:22px;right:22px;height:1px;background:var(--rig);border-radius:1px;}
+.brandmark{display:flex;align-items:center;gap:10px;margin-bottom:28px;}
+.brandmark .dot{width:10px;height:10px;border-radius:50%;background:var(--magenta);box-shadow:0 0 0 4px rgba(255,79,160,.18);animation:pulse 1.6s ease-in-out infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 4px rgba(255,79,160,.18);}50%{box-shadow:0 0 0 8px rgba(255,79,160,.06);}}
+.brandmark span{font-size:12px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase;}
+.login-card h1{font-size:33px;font-weight:700;line-height:1.15;margin-bottom:8px;letter-spacing:.01em;}
+.login-card h1 em{font-style:normal;background:var(--rig);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.login-card p.lead{color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:22px;}
+.scope-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:22px;}
+.scope-grid div{font-size:12px;color:var(--muted);background:var(--panel-2);border:1px solid var(--border);border-radius:9px;padding:8px 10px;display:flex;gap:7px;align-items:center;transition:border-color .16s var(--ease),color .16s var(--ease);}
+.scope-grid div:hover{border-color:var(--violet-dim);color:var(--text);}
+.scope-grid div::before{content:"◆";color:var(--cyan);font-size:9px;}
+.btn-twitch{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
+  background:var(--violet);color:#fff;border:none;padding:15px 20px;border-radius:11px;
+  font-weight:600;font-size:15px;box-shadow:0 10px 30px -8px rgba(139,108,250,.6);
+}
+.btn-twitch:hover{background:#7a58f2;transform:translateY(-2px);box-shadow:0 16px 38px -10px rgba(139,108,250,.65),0 8px 20px -10px rgba(255,79,160,.4);}
+.btn-twitch:active{transform:translateY(0);}
+.btn-oauth{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:10px;
+  background:transparent;color:var(--muted);border:1px solid var(--border);padding:11px 20px;border-radius:11px;
+  font-weight:500;font-size:13px;transition:.15s ease;margin-top:10px;
+}
+.btn-oauth:hover{border-color:var(--violet-dim);color:var(--text);background:var(--panel-2);}
+.btn-oauth svg{flex-shrink:0;}
+.login-foot{margin-top:16px;font-size:12px;color:var(--dim);text-align:center;line-height:1.6;}
+.login-divider{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--dim);font-size:11px;}
+.login-divider::before,.login-divider::after{content:"";flex:1;height:1px;background:var(--border);}
+.oauth-notice{background:rgba(255,180,84,.07);border:1px solid rgba(255,180,84,.2);border-radius:9px;padding:10px 13px;font-size:12px;color:var(--amber);line-height:1.5;margin-bottom:12px;}
+
+/* ============ APP ============ */
+#app{display:none;min-height:100vh;grid-template-columns:220px 1fr;}
+#app.active{display:grid;}
+.sidebar{background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 14px;gap:4px;}
+.sb-brand{display:flex;align-items:center;gap:9px;padding:6px 10px 22px;}
+.sb-brand .mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--violet),var(--magenta));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;font-family:'Chakra Petch',sans-serif;box-shadow:0 6px 18px -7px rgba(139,108,250,.65);}
+.sb-brand .name{font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:15px;}
+.sb-brand .name small{display:block;font-family:'Inter';font-weight:400;font-size:10px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-top:1px;}
+.nav-btn{display:flex;align-items:center;gap:11px;padding:10px 12px 10px 10px;border-radius:10px;color:var(--muted);background:none;border:none;border-left:2px solid transparent;text-align:left;font-size:13.5px;font-weight:500;}
+.nav-btn svg{width:16px;height:16px;flex-shrink:0;opacity:.8;transition:transform .18s var(--ease),opacity .18s var(--ease);}
+.nav-btn:hover{background:var(--panel-2);color:var(--text);}
+.nav-btn:hover svg{transform:translateX(1px) scale(1.08);}
+.nav-btn.active{background:linear-gradient(90deg,rgba(139,108,250,.16),var(--panel-3) 65%);color:#fff;border-left-color:var(--violet);box-shadow:0 6px 16px -10px rgba(139,108,250,.5);}
+.nav-btn.active svg{opacity:1;color:var(--violet);}
+.sb-spacer{flex:1;}
+.sb-status{background:var(--panel-2);border:1px solid var(--border);border-radius:11px;padding:12px;margin-bottom:8px;}
+.sb-status .row{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);margin-bottom:6px;}
+.sb-status .live-dot{width:7px;height:7px;border-radius:50%;background:var(--dim);}
+.sb-status .live-dot.on{background:var(--cyan);box-shadow:0 0 0 3px rgba(52,232,198,.22);animation:pulse2 1.8s infinite;}
+@keyframes pulse2{0%,100%{box-shadow:0 0 0 3px rgba(52,232,198,.22);}50%{box-shadow:0 0 0 6px rgba(52,232,198,.05);}}
+body:has(#liveDot.on) .sb-brand .mark{animation:brandLive 2.2s ease-in-out infinite;}
+@keyframes brandLive{0%,100%{box-shadow:0 6px 18px -7px rgba(139,108,250,.65);}50%{box-shadow:0 6px 22px -5px rgba(255,79,160,.6),0 0 0 3px rgba(255,79,160,.12);}}
+.sb-status b{color:var(--text);font-weight:600;}
+.sb-logout{background:none;border:1px solid var(--border);color:var(--muted);padding:9px;border-radius:9px;font-size:12px;width:100%;}
+.sb-logout:hover{border-color:var(--danger);color:var(--danger);background:rgba(255,92,122,.06);}
+.main{padding:22px 28px 40px;max-width:1240px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;gap:16px;}
+.topbar h2{font-size:22px;font-weight:700;}
+.topbar .sub{color:var(--muted);font-size:13px;margin-top:2px;}
+.signal{display:flex;align-items:flex-end;gap:2px;height:26px;padding:0 2px;}
+.signal i{width:3px;border-radius:2px;opacity:.35;transition:height .18s ease,opacity .18s ease;background:linear-gradient(180deg,var(--cyan),var(--violet) 55%,var(--magenta));}
+.panel{display:none;}
+.panel.active{display:block;animation:panelIn .28s var(--ease);}
+@keyframes panelIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;position:relative;overflow:hidden;box-shadow:var(--shadow-card);}
+.card::before{content:"";position:absolute;top:0;left:18px;right:18px;height:1px;background:var(--rig-soft);opacity:.55;}
+.card::after,.stat-card::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s ease;background:radial-gradient(240px circle at var(--mx,50%) var(--my,50%),rgba(139,108,250,.10),transparent 70%);}
+.card:hover::after,.stat-card:hover::after{opacity:1;}
+.card+.card{margin-top:14px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
+@media(max-width:1000px){.grid2,.grid3,.grid4,.grid5{grid-template-columns:1fr 1fr;}}
+.stat-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px 17px;position:relative;overflow:hidden;box-shadow:var(--shadow-card);transition:transform .18s var(--ease),border-color .18s var(--ease),box-shadow .18s var(--ease);}
+.stat-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2.5px;background:var(--rig);opacity:.7;}
+.stat-card:hover{transform:translateY(-2px);border-color:var(--violet-dim);box-shadow:var(--shadow-card),0 10px 26px -14px rgba(139,108,250,.4);}
+.stat-card .label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);}
+.stat-card .val{font-family:'Chakra Petch',sans-serif;font-size:27px;font-weight:700;margin-top:7px;background:linear-gradient(90deg,var(--text),var(--text) 60%,var(--violet));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.stat-card .val span{font-size:13px;color:var(--muted);font-weight:500;-webkit-text-fill-color:var(--muted);}
+.stat-card .val.pop{animation:valPop .4s var(--ease);}
+@keyframes valPop{0%{transform:scale(1.1);}100%{transform:scale(1);}}
+.confetti-bit{position:fixed;top:0;left:0;font-size:18px;pointer-events:none;z-index:999;will-change:transform,opacity;animation:confettiFall 1.1s var(--ease) forwards;}
+@keyframes confettiFall{0%{opacity:0;transform:translate(0,0) rotate(0deg) scale(.6);}12%{opacity:1;}100%{opacity:0;transform:var(--fall) rotate(var(--spin)) scale(1);}}
+
+/* ===== Рулетка розыгрыша (в стиле открытия кейса) ===== */
+.giveaway-roulette{position:relative;margin-top:14px;height:96px;border-radius:11px;background:var(--panel-2);border:1px solid var(--border);overflow:hidden;box-shadow:inset 0 0 26px rgba(0,0,0,.4);}
+.giveaway-roulette::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--rig);transform:translateX(-50%);z-index:3;box-shadow:0 0 14px 1px rgba(139,108,250,.75);}
+.giveaway-roulette::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;background:linear-gradient(90deg,var(--panel-2) 0%,transparent 14%,transparent 86%,var(--panel-2) 100%);}
+.roulette-track{position:absolute;top:0;left:0;height:100%;display:flex;align-items:center;will-change:transform;transform:translateX(0);}
+.roulette-track.spinning{transition:transform 5.4s cubic-bezier(.12,.85,.1,1);}
+.roulette-item{flex:0 0 auto;width:96px;height:80px;margin:8px 6px;border-radius:10px;background:var(--panel-3);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px 6px;font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:11.5px;color:var(--text);}
+.roulette-item .av{width:40px;height:40px;border-radius:50%;object-fit:cover;background:var(--panel);border:1px solid var(--border);flex-shrink:0;}
+.roulette-item .nm{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.roulette-item.winner-item{border-color:var(--cyan);background:linear-gradient(180deg,rgba(52,232,198,.14),var(--panel-3));box-shadow:0 0 0 2px rgba(52,232,198,.4),0 0 22px -3px rgba(52,232,198,.65);color:var(--cyan);}
+.roulette-item.winner-item .av{border-color:var(--cyan);}
+@keyframes winnerPulse{0%,100%{box-shadow:0 0 0 2px rgba(52,232,198,.4),0 0 22px -3px rgba(52,232,198,.65);}50%{box-shadow:0 0 0 2px rgba(52,232,198,.7),0 0 30px 2px rgba(52,232,198,.85);}}
+.roulette-item.winner-item.settled{animation:winnerPulse 1.1s ease-in-out infinite;}
+h3.section-title{font-size:14px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;letter-spacing:.01em;}
+h3.section-title::before{content:"";width:3px;height:14px;background:var(--rig);border-radius:2px;box-shadow:0 0 8px -1px rgba(139,108,250,.7);}
+.chatlog-wrap{position:relative;}
+.chatlog{height:520px;overflow-y:auto;display:flex;flex-direction:column;gap:0;font-family:'JetBrains Mono',monospace;font-size:13px;padding-right:4px;}
+.chat-line{padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.03);line-height:1.5;word-break:break-word;border-radius:5px;transition:background-color .12s var(--ease);animation:lineIn .22s var(--ease);}
+@keyframes lineIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+.chat-line:hover{background:rgba(255,255,255,.025);}
+.chat-line .badge{display:inline-block;font-size:9px;padding:1px 5px;border-radius:4px;margin-right:5px;font-weight:700;vertical-align:2px;font-family:'Inter';}
+.badge.mod{background:rgba(52,232,198,.18);color:var(--cyan);}
+.badge.broadcaster{background:rgba(255,79,160,.2);color:var(--magenta);}
+.badge.sub{background:rgba(255,180,84,.18);color:var(--amber);}
+.badge.vip{background:rgba(255,79,160,.18);color:var(--magenta);}
+.chat-line .uname{font-weight:600;}
+.chat-line .mention{background:rgba(139,108,250,.22);color:#fff;border-radius:4px;padding:0 3px;box-shadow:0 0 0 1px rgba(139,108,250,.35);}
+.chat-line .ts{color:var(--dim);font-size:10.5px;margin-right:6px;}
+.chat-line.event{color:var(--cyan);background:rgba(52,232,198,.06);border-radius:6px;padding:6px 8px;border-left:3px solid var(--cyan);}
+.chat-line.event.k-sub{color:var(--amber);background:rgba(255,180,84,.06);border-left-color:var(--amber);}
+.chat-line.event.k-gift{color:var(--amber);background:rgba(255,180,84,.06);border-left-color:var(--amber);}
+.chat-line.event.k-raid{color:var(--magenta);background:rgba(255,79,160,.07);border-left-color:var(--magenta);}
+.chat-line.event.k-mod{color:var(--danger);background:rgba(255,92,122,.06);border-left-color:var(--danger);}
+.chat-new-pill{position:absolute;left:50%;bottom:16px;transform:translate(-50%,10px);opacity:0;pointer-events:none;
+  background:var(--violet);color:#fff;font-size:12px;font-weight:600;padding:7px 14px;border-radius:20px;
+  box-shadow:0 10px 26px -8px rgba(139,108,250,.7);display:flex;align-items:center;gap:6px;
+  transition:opacity .18s var(--ease),transform .18s var(--ease);z-index:5;}
+.chat-new-pill.show{opacity:1;pointer-events:auto;transform:translate(-50%,0);}
+.chat-new-pill:hover{background:#7a58f2;}
+.chatbar{display:flex;gap:8px;margin-top:12px;align-items:center;}
+.chat-counter{font-size:10.5px;color:var(--dim);font-family:'JetBrains Mono',monospace;flex-shrink:0;min-width:44px;text-align:right;}
+.chat-counter.warn{color:var(--amber);}
+.nav-btn{position:relative;}
+.nav-dot{position:absolute;right:10px;top:9px;width:7px;height:7px;border-radius:50%;background:var(--magenta);box-shadow:0 0 0 3px rgba(255,79,160,.2);opacity:0;transform:scale(.5);transition:opacity .18s var(--ease),transform .18s var(--ease);}
+.nav-dot.show{opacity:1;transform:scale(1);}
+.chatbar input{flex:1;background:var(--panel-2);border:1px solid var(--border);color:var(--text);padding:10px 13px;border-radius:9px;font-size:13px;}
+.chatbar input:focus{outline:none;border-color:var(--violet-dim);box-shadow:0 0 0 3px rgba(139,108,250,.15);}
+.chatbar button{background:var(--violet);color:#fff;border:none;padding:0 18px;border-radius:9px;font-weight:600;font-size:13px;}
+.chatbar button:hover{background:#7a58f2;box-shadow:0 6px 16px -8px rgba(139,108,250,.7);}
+.btn{background:var(--panel-2);border:1px solid var(--border);color:var(--text);padding:9px 15px;border-radius:9px;font-size:13px;font-weight:500;}
+.btn:hover{border-color:var(--violet-dim);background:var(--panel-3);transform:translateY(-1px);}
+.btn:active{transform:translateY(0);}
+.btn.primary{background:var(--violet);border-color:var(--violet);color:#fff;}
+.btn.primary:hover{background:#7a58f2;box-shadow:0 8px 20px -9px rgba(139,108,250,.75);}
+.btn.danger{background:transparent;border-color:var(--border);color:var(--danger);}
+.btn.danger:hover{border-color:var(--danger);background:rgba(255,92,122,.08);}
+.btn.sm{padding:6px 11px;font-size:12px;}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:5px;}
+.field input[type=text],.field input[type=number],.field input[type=password],.field textarea,.field select{
+  width:100%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+  padding:10px 12px;border-radius:9px;font-size:13.5px;outline:none;
+}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--violet-dim);box-shadow:0 0 0 3px rgba(139,108,250,.15);}
+.field textarea{resize:vertical;min-height:60px;}
+.field-row{display:flex;gap:10px;}
+.field-row .field{flex:1;}
+.switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;}
+.switch input{display:none;}
+.switch .track{width:34px;height:19px;background:var(--panel-3);border-radius:12px;position:relative;transition:background-color .18s var(--ease),border-color .18s var(--ease);border:1px solid var(--border);}
+.switch .track::after{content:"";width:13px;height:13px;background:var(--muted);border-radius:50%;position:absolute;top:2px;left:2px;transition:transform .18s var(--ease),background-color .18s var(--ease);}
+.switch input:checked+.track{background:var(--violet-dim);border-color:var(--violet);box-shadow:0 0 0 3px rgba(139,108,250,.12);}
+.switch input:checked+.track::after{transform:translateX(15px);background:#fff;}
+.list-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;background:var(--panel-2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;transition:border-color .16s var(--ease),transform .16s var(--ease);}
+.list-item:hover{border-color:var(--violet-dim);transform:translateX(2px);}
+.list-item .lname{font-weight:600;font-size:13.5px;}
+.list-item .ldesc{color:var(--muted);font-size:12px;margin-top:2px;max-width:520px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.list-item .lmeta{display:flex;gap:6px;align-items:center;}
+.tag{font-size:10.5px;padding:2px 7px;border-radius:6px;background:var(--panel-3);color:var(--muted);text-transform:uppercase;letter-spacing:.04em;display:inline-block;transition:transform .15s var(--ease);}
+.tag:hover{transform:translateY(-1px);}
+.tag.on{color:var(--cyan);background:rgba(52,232,198,.1);}
+.tag.warn{color:var(--amber);background:rgba(255,180,84,.1);}
+.lb-row{display:flex;align-items:center;gap:12px;padding:10px 6px;border-bottom:1px solid rgba(255,255,255,.04);border-radius:6px;transition:background-color .12s var(--ease);}
+.lb-row:hover{background:rgba(255,255,255,.025);}
+.lb-rank{width:22px;font-family:'Chakra Petch',sans-serif;font-weight:700;color:var(--dim);font-size:13px;}
+.lb-row:nth-child(1) .lb-rank{color:var(--amber);text-shadow:0 0 10px rgba(255,180,84,.5);}
+.lb-row:nth-child(2) .lb-rank{color:#C9CBD9;}
+.lb-row:nth-child(3) .lb-rank{color:#D7935A;}
+.lb-name{flex:1;font-weight:600;font-size:13px;}
+.lb-pts{font-family:'JetBrains Mono',monospace;color:var(--cyan);font-size:13px;}
+.empty{color:var(--dim);font-size:13px;text-align:center;padding:26px 10px;}
+.toast-wrap{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:200;}
+.toast{background:var(--panel-3);border:1px solid var(--border);border-left:3px solid var(--violet);padding:11px 15px;border-radius:9px;font-size:13px;box-shadow:var(--shadow-pop);animation:toastIn .22s var(--ease);}
+.toast.err{border-left-color:var(--danger);}
+.toast.ok{border-left-color:var(--cyan);}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
+.modal-bg{position:fixed;inset:0;background:rgba(4,4,8,.65);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:150;animation:fadeIn .15s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:24px;width:440px;max-width:92vw;max-height:86vh;overflow-y:auto;box-shadow:var(--shadow-pop);animation:modalPop .2s var(--ease);}
+@keyframes modalPop{from{opacity:0;transform:scale(.96) translateY(6px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.modal h3{font-size:16px;margin-bottom:16px;}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+.two-col{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;}
+@media(max-width:1000px){.two-col{grid-template-columns:1fr;}}
+.hint{font-size:12px;color:var(--dim);margin-top:6px;line-height:1.5;}
+.divider{height:1px;background:var(--border);margin:16px 0;}
+.stream-mgmt-row{display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;}
+.stream-mgmt-row .field{flex:1;margin-bottom:0;}
+.stream-mgmt-row .btn{flex-shrink:0;white-space:nowrap;}
+.alert-box{border-radius:10px;padding:12px 15px;font-size:13px;line-height:1.5;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start;}
+.alert-box.warn{background:rgba(255,180,84,.08);border:1px solid rgba(255,180,84,.2);color:var(--amber);}
+.alert-box.info{background:rgba(139,108,250,.08);border:1px solid rgba(139,108,250,.2);color:var(--violet);}
+.alert-box.ok{background:rgba(52,232,198,.08);border:1px solid rgba(52,232,198,.2);color:var(--cyan);}
+.token-status{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:9px;font-size:12px;}
+.token-status.good{background:rgba(52,232,198,.08);border:1px solid rgba(52,232,198,.15);color:var(--cyan);}
+.token-status.bad{background:rgba(255,92,122,.08);border:1px solid rgba(255,92,122,.15);color:var(--danger);}
+.token-status.pending{background:rgba(255,180,84,.08);border:1px solid rgba(255,180,84,.15);color:var(--amber);}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="brandmark"><div class="dot"></div><span>Панель управления ботом</span></div>
+    <h1>Leim<em>TwitchBot</em></h1>
+    <p class="lead">Чат-бот <b style="color:var(--violet)">leimtwitch</b> для Twitch: кастомные команды, экономика, мини-игры, автомодерация, таймеры.</p>
+    <div class="scope-grid">
+      <div>Живой чат канала</div>
+      <div>Очки и топ зрителей</div>
+      <div>Анаграммы, математика</div>
+      <div>Автомодерация</div>
+      <div>Смена названия стрима</div>
+      <div>Смена категории/игры</div>
+      <div>Таймеры сообщений</div>
+      <div>Розыгрыши и опросы</div>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px;">Ваш Twitch-никнейм</label>
+      <input type="text" id="botChannelInput" placeholder="например: prostreamername"
+        style="width:100%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);padding:12px 14px;border-radius:9px;font-size:15px;outline:none;transition:.12s;"
+        autocomplete="off" spellcheck="false">
+    </div>
+    <button class="btn-twitch" id="btnBotLogin">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M11.64 5.93h1.43v4.28h-1.43m3.93-4.28H17v4.28h-1.43M7 2 3.43 5.57v12.86h4.28V22l3.58-3.57h2.85L20.57 12V2m-1.43 9.29-2.85 2.85h-2.86l-2.5 2.5v-2.5H7.71V3.43h11.43Z"/></svg>
+      Подключить бота к моему каналу
+    </button>
+
+    <div class="login-divider">или расширенный доступ</div>
+
+    <div class="oauth-notice">
+      ⚡ Для команд <b>!title</b> и <b>!category</b> нужна авторизация через Twitch — чтобы бот мог менять данные вашего канала.
+    </div>
+    <button class="btn-oauth" id="btnOAuthLogin">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 5v6c0 5 3.4 9 8 11 4.6-2 8-6 8-11V5z"/></svg>
+      Войти через Twitch (открывает !title и !category)
+    </button>
+
+    <p class="login-foot" style="margin-top:16px;">Бот <b style="color:var(--violet)">leimtwitch</b> подключится к вашему чату автоматически.</p>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app">
+  <aside class="sidebar">
+    <div class="sb-brand">
+      <div class="mark">L</div>
+      <div class="name">LeimTwitchBot<small id="sbChannel">—</small></div>
+    </div>
+    <button class="nav-btn active" data-panel="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Обзор</button>
+    <button class="nav-btn" data-panel="chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Чат<span class="nav-dot" id="chatNavDot"></span></button>
+    <button class="nav-btn" data-panel="commands"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m4 17 6-6-6-6"/><path d="M12 19h8"/></svg>Команды</button>
+    <button class="nav-btn" data-panel="economy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5c0-1.4 1.3-2.5 3-2.5s3 .9 3 2c0 3-6 1.5-6 4.5 0 1.1 1.3 2 3 2s3-1.1 3-2.5"/></svg>Экономика</button>
+    <button class="nav-btn" data-panel="games"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="10" rx="5"/><path d="M6 12h.01M9 12h3M15 10.5v3M17 12h.01"/></svg>Игры чата</button>
+    <button class="nav-btn" data-panel="moderation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 5v6c0 5 3.4 9 8 11 4.6-2 8-6 8-11V5z"/></svg>Модерация</button>
+    <button class="nav-btn" data-panel="timers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>Таймеры</button>
+    <button class="nav-btn" data-panel="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1-.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Настройки</button>
+    <div class="sb-spacer"></div>
+    <div class="sb-status">
+      <div class="row"><span class="live-dot" id="liveDot"></span><span id="liveLabel">Оффлайн</span></div>
+      <div class="row" style="margin-bottom:0"><span>IRC:</span> <b id="ircStatusLabel" style="margin-left:auto">отключено</b></div>
+    </div>
+    <button class="sb-logout" id="btnLogout">Выйти</button>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div><h2 id="topTitle">Обзор</h2><div class="sub" id="topSub">Панель управления чат-ботом</div></div>
+      <div class="signal" id="signal"></div>
+    </div>
+
+    <!-- OVERVIEW -->
+    <section class="panel active" id="panel-overview">
+      <div id="noTokenBanner" class="alert-box warn hidden">
+        ⚠ <b>Токен бота не задан — бот не может подключиться к IRC и не отвечает на команды!</b>
+        Перейдите в <a href="#" onclick="switchPanel('settings');return false;" style="color:var(--amber);text-decoration:underline">Настройки → Токен бота</a>, получите токен на <a href="https://twitchapps.com/tmi/" target="_blank" style="color:var(--amber)">twitchapps.com/tmi</a> и сохраните его.
+      </div>
+      <div id="titleCategoryAlert" class="alert-box warn hidden">
+        ⚡ Команды <b>!title</b> и <b>!category</b> не активны. <button class="btn sm" id="alertOAuthBtn" style="margin-left:10px;padding:4px 10px;font-size:11px;">Авторизовать через Twitch</button>
+      </div>
+      <div class="grid5" style="margin-bottom:14px">
+        <div class="stat-card"><div class="label">Статус стрима</div><div class="val" id="stOnline">—</div></div>
+        <div class="stat-card"><div class="label">Аптайм</div><div class="val" id="stUptime">—</div></div>
+        <div class="stat-card"><div class="label">Зрителей</div><div class="val" id="stChatters">—</div></div>
+        <div class="stat-card"><div class="label">Сообщений</div><div class="val" id="stMsgs">0</div></div>
+        <div class="stat-card"><div class="label">Уникальных</div><div class="val" id="stUsers">0</div></div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <h3 class="section-title">Стрим</h3>
+          <div id="streamInfoBox" class="empty">Данные загружаются…</div>
+        </div>
+        <div class="card">
+          <h3 class="section-title">Топ по очкам</h3>
+          <div id="overviewTop"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h3 class="section-title">Управление стримом</h3>
+        <div id="streamMgmtAuthNotice" class="hint" style="margin-bottom:12px;color:var(--amber);display:none">
+          ⚠ Для смены названия/категории нужна авторизация через Twitch. <button class="btn sm" id="streamMgmtAuthBtn" style="margin-left:8px;font-size:11px;">Авторизовать</button>
+        </div>
+        <div class="stream-mgmt-row">
+          <div class="field"><label>Новое название стрима</label><input type="text" id="quickTitle" placeholder="Введите новое название" maxlength="140"></div>
+          <button class="btn primary sm" id="quickTitleBtn">Изменить</button>
+        </div>
+        <div class="stream-mgmt-row">
+          <div class="field"><label>Категория / игра</label><input type="text" id="quickCategory" placeholder="Minecraft, Just Chatting, Dota 2…"></div>
+          <button class="btn primary sm" id="quickCategoryBtn">Изменить</button>
+        </div>
+        <div class="hint">Команды в чат (только модераторы и стример): <span class="tag mono">!title Название</span> <span class="tag mono">!category Игра</span></div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h3 class="section-title">Быстрые действия</h3>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn" id="qaShoutout">📣 Приветствие чату</button>
+          <button class="btn" id="qaSlowmode">🐢 Slow mode 10с</button>
+          <button class="btn" id="qaSubonly">👑 Только для сабов</button>
+          <button class="btn" id="qaSuboff">🔓 Снять режим сабов</button>
+          <button class="btn danger" id="qaClear">🧹 Очистить чат</button>
+          <button class="btn primary" id="qaGoChat">💬 Открыть чат</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHAT -->
+    <section class="panel" id="panel-chat">
+      <div class="two-col">
+        <div class="card">
+          <h3 class="section-title">Живой чат</h3>
+          <div class="chatlog-wrap">
+            <div class="chatlog" id="chatlog"></div>
+            <button type="button" class="chat-new-pill" id="chatNewPill">↓ Новые сообщения</button>
+          </div>
+          <div class="chatbar">
+            <input type="text" id="chatInput" placeholder="Написать в чат как leimtwitch…" maxlength="480">
+            <span class="chat-counter" id="chatCounter">0/480</span>
+            <button id="chatSend">Отправить</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3 class="section-title">Мод-команды</h3>
+          <div class="hint" style="margin-bottom:10px">Работают если <b>leimtwitch</b> — модератор канала.</div>
+          <div class="field"><label>Никнейм пользователя</label><input type="text" id="modUser" placeholder="username"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+            <button class="btn sm" data-mod="timeout:60">Тайм-аут 1м</button>
+            <button class="btn sm" data-mod="timeout:300">Тайм-аут 5м</button>
+            <button class="btn sm" data-mod="timeout:600">Тайм-аут 10м</button>
+            <button class="btn sm danger" data-mod="ban">Бан</button>
+            <button class="btn sm" data-mod="unban">Разбан</button>
+            <button class="btn sm" data-mod="vip">Выдать VIP</button>
+            <button class="btn sm" data-mod="unvip">Снять VIP</button>
+            <button class="btn sm" data-mod="mod">Выдать мода</button>
+            <button class="btn sm" data-mod="unmod">Снять мода</button>
+          </div>
+          <div class="divider"></div>
+          <h3 class="section-title">Активные зрители</h3>
+          <div id="activeChatters" class="empty">Пока никто не писал</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- COMMANDS -->
+    <section class="panel" id="panel-commands">
+      <div class="card" style="margin-bottom:18px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h3 class="section-title" style="margin-bottom:0">Встроенные команды</h3>
+          <span class="hint" style="font-size:11px;margin:0">Нажми ✎ чтобы изменить ответ или доступ</span>
+        </div>
+        <div id="builtinCmdList"></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h3 class="section-title" style="margin-bottom:0">Свои команды</h3>
+          <button class="btn primary sm" id="btnAddCmd">+ Новая команда</button>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Префикс команд</label><input type="text" id="cmdPrefix" maxlength="3" style="max-width:100px"></div>
+          <div class="field"><label>Глобальный кулдаун (сек)</label><input type="number" id="cmdGlobalCd" min="0" style="max-width:140px"></div>
+        </div>
+        <div id="cmdList"></div>
+      </div>
+    </section>
+
+    <!-- ECONOMY -->
+    <section class="panel" id="panel-economy">
+      <div class="two-col">
+        <div class="card">
+          <h3 class="section-title">Настройки очков</h3>
+          <div class="field"><label>Название валюты</label><input type="text" id="ecoName"></div>
+          <div class="field-row">
+            <div class="field"><label>Очков за минуту</label><input type="number" id="ecoRate" min="0"></div>
+            <div class="field"><label>Бонус за сообщение</label><input type="number" id="ecoMsgBonus" min="0"></div>
+          </div>
+          <div class="hint">Очки начисляются за активность в чате пока бот подключён.</div>
+          <div class="divider"></div>
+          <h3 class="section-title">Команды экономики</h3>
+          <div style="line-height:2">
+            <span class="tag">!очки</span> баланс &nbsp;
+            <span class="tag">!топ</span> топ-10 &nbsp;
+            <span class="tag">!дать ник сумма</span> перевод &nbsp;
+            <span class="tag">!ставка сумма/all</span> ставка &nbsp;
+            <span class="tag">!слоты сумма</span> слоты &nbsp;
+            <span class="tag">!рулетка</span> рулетка
+          </div>
+        </div>
+        <div class="card">
+          <h3 class="section-title">Топ зрителей</h3>
+          <div id="ecoLeaderboard"></div>
+          <div class="divider"></div>
+          <div class="field"><label>Выдать очки вручную</label>
+            <div class="field-row">
+              <input type="text" id="ecoManualUser" placeholder="ник" style="flex:1">
+              <input type="number" id="ecoManualAmt" placeholder="сумма" style="max-width:110px">
+              <button class="btn sm" id="ecoManualBtn">Выдать</button>
+            </div>
+          </div>
+          <div class="field"><label>Снять очки вручную</label>
+            <div class="field-row">
+              <input type="text" id="ecoTakeUser" placeholder="ник" style="flex:1">
+              <input type="number" id="ecoTakeAmt" placeholder="сумма" style="max-width:110px">
+              <button class="btn sm danger" id="ecoTakeBtn">Снять</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAMES -->
+    <section class="panel" id="panel-games">
+      <div class="grid2">
+        <div class="card">
+          <h3 class="section-title">🔤 Анаграммы</h3>
+          <div class="hint" style="margin-bottom:10px">Команда <b>!анаграмма</b> запускает, зрители отгадывают через <b>!угадай слово</b>.</div>
+          <div class="field"><label>Слова (через запятую)</label><textarea id="anagramWords"></textarea></div>
+          <div class="field"><label>Награда за победу</label><input type="number" id="anagramReward" min="0"></div>
+          <div id="anagramStatus" class="hint"></div>
+        </div>
+        <div class="card">
+          <h3 class="section-title">➕ Математика</h3>
+          <div class="hint" style="margin-bottom:10px">Команда <b>!math</b> задаёт пример. Первый правильный ответ побеждает.</div>
+          <div class="field-row">
+            <div class="field"><label>Макс. число</label><input type="number" id="mathMax" min="2"></div>
+            <div class="field"><label>Награда</label><input type="number" id="mathReward" min="0"></div>
+          </div>
+          <div id="mathStatus" class="hint"></div>
+        </div>
+        <div class="card">
+          <h3 class="section-title">🗳 Опрос</h3>
+          <div class="field"><label>Вопрос</label><input type="text" id="pollQuestion" placeholder="Что стримим дальше?"></div>
+          <div class="field"><label>Варианты (через запятую, до 5)</label><input type="text" id="pollOptions" placeholder="Вариант 1, Вариант 2, Вариант 3"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn primary sm" id="pollStart">Запустить</button>
+            <button class="btn sm" id="pollStop">Завершить</button>
+          </div>
+          <div class="hint" style="margin-top:8px">Голосование: зрители пишут <b>!голос 1</b>, <b>!голос 2</b> и т.д.</div>
+          <div id="pollStatus" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <h3 class="section-title">🎁 Розыгрыш</h3>
+          <div class="field"><label>Ключевое слово для участия</label><input type="text" id="giveawayKeyword" value="!участвую"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn primary sm" id="giveawayStart">Начать</button>
+            <button class="btn sm" id="giveawayPick">🎲 Выбрать победителя</button>
+            <button class="btn sm danger" id="giveawayStop">Стоп</button>
+          </div>
+          <div class="giveaway-roulette hidden" id="giveawayRoulette"><div class="roulette-track" id="giveawayTrack"></div></div>
+          <div id="giveawayStatus" style="margin-top:12px"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODERATION -->
+    <section class="panel" id="panel-moderation">
+      <div class="two-col">
+        <div class="card">
+          <h3 class="section-title">Автомодерация</h3>
+          <label class="switch" style="margin-bottom:14px"><input type="checkbox" id="modEnabled"><span class="track"></span> Включить фильтры</label>
+          <div class="field"><label>Запрещённые слова (через запятую)</label><textarea id="modBadwords" placeholder="слово1, слово2"></textarea></div>
+          <label class="switch" style="margin-bottom:10px"><input type="checkbox" id="modLinks"><span class="track"></span> Удалять ссылки</label><br>
+          <div class="field-row">
+            <div class="field"><label>Лимит CAPS (%)</label><input type="number" id="modCaps" min="0" max="100"></div>
+            <div class="field"><label>Макс. повторов</label><input type="number" id="modRepeat" min="1"></div>
+          </div>
+          <div class="field"><label>Действие при нарушении</label>
+            <select id="modAction">
+              <option value="delete">Тайм-аут 1с (аналог удаления)</option>
+              <option value="timeout">Тайм-аут 60с</option>
+              <option value="warn">Предупреждение в чат</option>
+            </select>
+          </div>
+          <div class="hint">Модераторы, VIP и стример не проверяются фильтрами.</div>
+        </div>
+        <div class="card">
+          <h3 class="section-title">Журнал модерации</h3>
+          <div id="modLog" class="empty">Событий пока нет</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TIMERS -->
+    <section class="panel" id="panel-timers">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h3 class="section-title" style="margin-bottom:0">Автосообщения</h3>
+          <button class="btn primary sm" id="btnAddTimer">+ Новый таймер</button>
+        </div>
+        <div class="hint" style="margin-bottom:12px">Сообщения отправляются периодически, только если в чате была активность за последние 5 минут.</div>
+        <div id="timerList"></div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="panel" id="panel-settings">
+      <div class="two-col">
+        <div class="card">
+          <h3 class="section-title">Канал</h3>
+          <div class="field"><label>Канал для подключения</label><input type="text" id="settChannel"></div>
+          <div class="hint">Смените канал если хотите управлять другим каналом.</div>
+          <button class="btn primary sm" id="settReconnect" style="margin-top:12px">Переподключиться</button>
+        </div>
+        <div class="card">
+          <h3 class="section-title">Аккаунт</h3>
+          <div class="ldesc" style="font-size:13px">IRC бот: <b id="accBotLogin" class="mono" style="color:var(--violet)">leimtwitch</b></div>
+          <div id="botTokenStatus" class="token-status pending" style="margin-top:10px">⏳ Проверка токена бота…</div>
+          <div class="ldesc" style="font-size:13px;margin-top:12px">Авторизация стримера (для !title/!category):</div>
+          <div id="broadcasterAuthStatus" class="token-status pending" style="margin-top:8px">⚠ Не авторизован</div>
+          <button class="btn sm" id="settOAuthBtn" style="margin-top:10px;width:100%">Авторизовать через Twitch</button>
+          <button class="btn sm danger" id="settRevokeBroadcaster" style="margin-top:8px;width:100%" class="hidden">Отозвать авторизацию стримера</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h3 class="section-title">Токен бота (leimtwitch)</h3>
+        <div class="hint" style="margin-bottom:10px">Twitch-токены истекают. Если бот перестал подключаться — обновите токен здесь. Получить новый: <a href="https://twitchapps.com/tmi/" target="_blank" style="color:var(--violet)">twitchapps.com/tmi</a></div>
+        <div class="field-row">
+          <div class="field" style="flex:1"><label>Новый Access Token для leimtwitch</label><input type="password" id="newBotToken" placeholder="oauth:xxxxxxxxxx или просто xxxxxxxxxx"></div>
+          <button class="btn sm primary" id="saveBotToken" style="margin-top:20px;flex-shrink:0">Сохранить</button>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h3 class="section-title">Faceit (для !эло)</h3>
+        <div class="hint" style="margin-bottom:10px">Нужен бесплатный API-ключ (тип «Server-side») с <a href="https://developers.faceit.com/apps" target="_blank" style="color:var(--violet)">developers.faceit.com/apps</a>, чтобы команда <b>!эло</b> могла запросить рейтинг и статистику за сегодня.</div>
+        <div class="field-row">
+          <div class="field" style="flex:1"><label>Faceit API Key</label><input type="password" id="faceitApiKey" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"></div>
+          <div class="field" style="flex:1"><label>Никнейм на Faceit</label><input type="text" id="faceitNickname" placeholder="ddrt" value="ddrt"></div>
+        </div>
+        <div class="field-row" style="margin-top:10px">
+          <div class="field" style="flex:1"><label>Faceit Player ID (необязательно)</label><input type="text" id="faceitPlayerId" placeholder="e0fbaddd-7d60-4f24-ac48-eb12fc79cd47" value="e0fbaddd-7d60-4f24-ac48-eb12fc79cd47"></div>
+          <div class="field" style="flex:1"><label>Steam ID64 (необязательно, запасной способ)</label><input type="text" id="faceitSteamId" placeholder="76561198167335535" value="76561198167335535"></div>
+        </div>
+        <div class="field-row" style="margin-top:10px">
+          <div class="field" style="flex:1"><label>Proxy URL (обязательно для браузера — обходит CORS)</label><input type="text" id="faceitProxyUrl" placeholder="https://твой-воркер.workers.dev"></div>
+        </div>
+        <div class="oauth-notice" style="margin-top:10px">Faceit Data API не отдаёт CORS-заголовки браузеру — прямой запрос из этой страницы всегда будет заблокирован. Нужен маленький бесплатный прокси (Cloudflare Workers, 2 минуты настройки) — код и инструкция ниже в чате.</div>
+        <div class="field-row" style="margin-top:10px">
+          <button class="btn sm primary" id="saveFaceitSettings" style="flex-shrink:0">Сохранить</button>
+          <button class="btn sm" id="testFaceitSettings" style="flex-shrink:0">Проверить</button>
+        </div>
+        <div id="faceitTestResult" class="hint" style="margin-top:10px"></div>
+        <div class="hint" style="margin-top:10px">Приоритет поиска: Player ID → Steam ID64 → никнейм. Если указан Player ID — бот берёт данные напрямую по нему (быстрее, без поиска по нику). Расширенная статистика: <a href="https://faceitanalyser.com/account/ddrt/cs2" target="_blank" style="color:var(--violet)">faceitanalyser.com/account/ddrt/cs2</a> — ссылка на неё доступна в шаблоне через переменную <b>{statsLink}</b>.</div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <h3 class="section-title">Данные</h3>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn sm" id="exportData">⭳ Экспорт настроек (JSON)</button>
+          <button class="btn sm" id="importDataBtn">⭱ Импорт настроек</button>
+          <input type="file" id="importDataFile" accept="application/json" class="hidden">
+          <button class="btn sm danger" id="wipeData">Сбросить данные канала</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+<div id="modalRoot"></div>
+
+<script>
+/* =============================================================================
+   LeimTwitchBot v3 — двухтокенная архитектура
+   • IRC-бот:   leimtwitch (токен из localStorage или встроенный)
+   • API-вызовы (title/category): токен стримера (OAuth implicit)
+   ============================================================================= */
+
+const CLIENT_ID  = 'gp762nuuoqcoxypju8c569th9wz7q5';
+const BOT_LOGIN  = 'leimtwitch';
+
+const OAUTH_SCOPES = [
+  'chat:read','chat:edit',
+  'moderator:manage:banned_users','moderator:manage:chat_messages',
+  'moderator:read:chatters','channel:read:subscriptions',
+  'channel:manage:broadcast'
+];
+
+/* ── storage ── */
+const Store = {
+  raw(k, fb){ try{ const v=localStorage.getItem(k); return v===null?fb:JSON.parse(v); }catch(e){ return fb; } },
+  set(k, v){ localStorage.setItem(k, JSON.stringify(v)); },
+  ns(ch){ return 'ltb:'+(ch||'_')+':'; }
+};
+
+let CHANNEL = null;
+let BROADCASTER = null; // {token, login, userId} — OAuth стримера
+
+function nsKey(s){ return Store.ns(CHANNEL)+s; }
+function load(s, fb){ return Store.raw(nsKey(s), fb); }
+function save(s, v){ Store.set(nsKey(s), v); }
+
+/* текущий токен бота (только из localStorage — встроенный токен убран, он был просрочен) */
+function getBotToken(){ return Store.raw('ltb_bot_token', null); }
+function setBotToken(t){ Store.set('ltb_bot_token', t.replace(/^oauth:/,'')); }
+
+/* токен для Helix API (стример если есть, иначе бот) */
+function apiToken(){
+  if(BROADCASTER && BROADCASTER.token) return BROADCASTER.token;
+  return getBotToken();
+}
+
+/* ── toast ── */
+function toast(msg, type){
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = 'toast'+(type?' '+type:'');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='.3s'; setTimeout(()=>el.remove(),300); }, 4000);
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function highlightMentions(escapedText){
+  const names=[BOT_LOGIN,CHANNEL].filter(Boolean).map(n=>n.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
+  if(!names.length) return escapedText;
+  const re=new RegExp('@('+names.join('|')+')\\b','gi');
+  return escapedText.replace(re,m=>`<span class="mention">${m}</span>`);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   OAUTH — для стримера (title/category)
+   ══════════════════════════════════════════════════════════════════════ */
+function beginOAuth(){
+  const redirect = location.origin + location.pathname;
+  Store.set('ltb_oauth_redirect', redirect);
+  Store.set('ltb_oauth_channel', CHANNEL || '');
+  const p = new URLSearchParams({
+    client_id: CLIENT_ID,
+    redirect_uri: redirect,
+    response_type: 'token',
+    scope: OAUTH_SCOPES.join(' '),
+    force_verify: 'true'
+  });
+  location.href = 'https://id.twitch.tv/oauth2/authorize?'+p;
+}
+
+async function tryRestoreOAuth(){
+  // 1. Свежий токен из URL hash
+  if(location.hash && location.hash.includes('access_token')){
+    const h = new URLSearchParams(location.hash.slice(1));
+    const token = h.get('access_token');
+    if(token){
+      try{
+        const v = await validateToken(token);
+        BROADCASTER = { token, login: v.login.toLowerCase(), userId: v.user_id, scopes: v.scopes||[] };
+        Store.set('ltb_broadcaster', BROADCASTER);
+        // Восстанавливаем канал если переходили с логина
+        const savedCh = Store.raw('ltb_oauth_channel', '');
+        if(savedCh && !CHANNEL) CHANNEL = savedCh;
+        history.replaceState(null,'', location.pathname);
+        toast('✅ Авторизация Twitch успешна: '+BROADCASTER.login, 'ok');
+      }catch(e){ toast('Не удалось подтвердить токен стримера','err'); }
+    }
+  }
+  // 2. Из storage
+  if(!BROADCASTER){
+    const saved = Store.raw('ltb_broadcaster', null);
+    if(saved && saved.token){
+      try{
+        const v = await validateToken(saved.token);
+        BROADCASTER = { token: saved.token, login: v.login.toLowerCase(), userId: v.user_id, scopes: v.scopes||[] };
+        Store.set('ltb_broadcaster', BROADCASTER);
+      }catch(e){
+        localStorage.removeItem('ltb_broadcaster');
+        BROADCASTER = null;
+      }
+    }
+  }
+}
+
+async function validateToken(token){
+  const r = await fetch('https://id.twitch.tv/oauth2/validate', { headers:{ Authorization:'OAuth '+token } });
+  if(!r.ok) throw new Error('invalid');
+  return r.json();
+}
+
+function revokeBroadcaster(){
+  localStorage.removeItem('ltb_broadcaster');
+  BROADCASTER = null;
+  updateAuthStatusUI();
+  toast('Авторизация стримера отозвана');
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   HELIX API
+   ══════════════════════════════════════════════════════════════════════ */
+async function helix(path, opts){
+  opts = opts||{};
+  const token = opts._forceToken || apiToken();
+  const r = await fetch('https://api.twitch.tv/helix'+path, Object.assign({
+    headers: Object.assign({ 'Client-Id':CLIENT_ID, 'Authorization':'Bearer '+token }, opts.headers||{})
+  }, opts));
+  if(r.status===401){ throw new Error('unauthorized'); }
+  if(r.status===403){ throw new Error('forbidden'); }
+  if(!r.ok){ throw new Error('helix_'+r.status); }
+  if(r.status===204) return null;
+  return r.json();
+}
+
+async function helixPatch(path, body){
+  if(!BROADCASTER || !BROADCASTER.token){
+    toast('Нужна авторизация через Twitch для смены названия/категории','err');
+    throw new Error('no_broadcaster_token');
+  }
+  const r = await fetch('https://api.twitch.tv/helix'+path, {
+    method:'PATCH',
+    headers:{ 'Client-Id':CLIENT_ID, 'Authorization':'Bearer '+BROADCASTER.token, 'Content-Type':'application/json' },
+    body: JSON.stringify(body)
+  });
+  if(r.status===401){ toast('Токен стримера истёк — авторизуйтесь снова','err'); BROADCASTER=null; Store.set('ltb_broadcaster',null); updateAuthStatusUI(); throw new Error('unauthorized'); }
+  if(r.status===403){ toast('Нет прав: убедитесь что авторизовались под аккаунтом стримера','err'); throw new Error('forbidden'); }
+  if(!r.ok) throw new Error('patch_'+r.status);
+  return null;
+}
+
+async function lookupGame(name){
+  try{
+    let d = await helix('/games?name='+encodeURIComponent(name));
+    if(d && d.data && d.data[0]) return d.data[0];
+    d = await helix('/search/categories?query='+encodeURIComponent(name)+'&first=1');
+    if(d && d.data && d.data[0]) return d.data[0];
+  }catch(e){}
+  return null;
+}
+
+let broadcasterId = null;
+async function resolveBroadcasterId(){
+  const ch = CHANNEL;
+  // Если стример авторизован и его логин совпадает — берём userId напрямую
+  if(BROADCASTER && BROADCASTER.login === ch){
+    broadcasterId = BROADCASTER.userId;
+    return;
+  }
+  try{
+    const d = await helix('/users?login='+encodeURIComponent(ch));
+    if(d && d.data && d.data[0]) broadcasterId = d.data[0].id;
+  }catch(e){}
+}
+
+async function fetchStreamInfo(){
+  try{
+    const d = await helix('/streams?user_login='+encodeURIComponent(CHANNEL));
+    return (d.data && d.data[0]) || null;
+  }catch(e){ return null; }
+}
+
+async function fetchChattersCount(){
+  if(!broadcasterId) return null;
+  const modId = (BROADCASTER && BROADCASTER.userId) ? BROADCASTER.userId : null;
+  if(!modId) return null;
+  try{
+    const d = await helix(`/chat/chatters?broadcaster_id=${broadcasterId}&moderator_id=${modId}&first=1`);
+    return typeof d.total==='number' ? d.total : null;
+  }catch(e){ return null; }
+}
+
+
+/* ── Аватарки Twitch (для рулетки розыгрыша и т.п.) ── */
+const DEFAULT_AVATAR='https://static-cdn.jtvnw.net/user-default-pictures-uv/de130ab0-def7-11e9-b668-784f43822e80-profile_image-70x70.png';
+const AvatarCache={};
+async function fetchAvatars(usernames){
+  const need=[...new Set(usernames.map(u=>String(u).toLowerCase()).filter(u=>u&&!AvatarCache[u]))];
+  for(let i=0;i<need.length;i+=100){
+    const chunk=need.slice(i,i+100);
+    try{
+      const qs=chunk.map(u=>'login='+encodeURIComponent(u)).join('&');
+      const d=await helix('/users?'+qs);
+      const found=new Set();
+      (d&&d.data||[]).forEach(u=>{ AvatarCache[u.login.toLowerCase()]=u.profile_image_url; found.add(u.login.toLowerCase()); });
+      chunk.forEach(u=>{ if(!found.has(u)) AvatarCache[u]=DEFAULT_AVATAR; });
+    }catch(e){
+      chunk.forEach(u=>{ AvatarCache[u]=DEFAULT_AVATAR; });
+    }
+  }
+}
+function getAvatar(username){
+  return AvatarCache[String(username).toLowerCase()]||DEFAULT_AVATAR;
+}
+
+/* ── Faceit (для !эло): ELO и статистика за сегодня ── */
+const FaceitConfig={
+  get(){ return load('faceit_settings',{apiKey:'04f107e5-1514-4a32-80c1-02b5b9b719a1',nickname:'ddrt',playerId:'e0fbaddd-7d60-4f24-ac48-eb12fc79cd47',steamId:'76561198167335535',proxyUrl:''}); },
+  set(v){ save('faceit_settings',Object.assign({},this.get(),v)); }
+};
+function faceitAnalyserUrl(nickname){
+  return 'https://faceitanalyser.com/account/'+encodeURIComponent(nickname||'ddrt')+'/cs2';
+}
+async function faceitApi(path){
+  const cfg=FaceitConfig.get();
+  if(!cfg.apiKey) throw new Error('no_key');
+  // Faceit Data API не отдаёт CORS-заголовки браузеру — без proxyUrl запрос из клиентского JS будет заблокирован.
+  const base=cfg.proxyUrl?cfg.proxyUrl.replace(/\/$/,''):'https://open.faceit.com/data/v4';
+  let r;
+  try{
+    r=await fetch(base+path,{headers:{Authorization:'Bearer '+cfg.apiKey}});
+  }catch(networkErr){
+    // fetch сам бросает TypeError без деталей при блокировке CORS или обрыве сети
+    throw new Error(cfg.proxyUrl?'network_error':'network_or_cors');
+  }
+  if(r.status===401||r.status===403) throw new Error('bad_key');
+  if(r.status===404) throw new Error('not_found');
+  if(!r.ok) throw new Error('faceit_'+r.status);
+  return r.json();
+}
+function faceitErrorMessage(e){
+  const code=(e&&e.message)||'';
+  if(code==='no_key') return 'не указан API-ключ';
+  if(code==='network_or_cors') return 'запрос заблокирован (обычно это CORS — Faceit Data API не отдаёт заголовки для запросов из браузера) или пропал интернет. Укажи Proxy URL в настройках, чтобы обойти CORS';
+  if(code==='network_error') return 'не удалось достучаться до прокси — проверь Proxy URL и что воркер задеплоен';
+  if(code==='bad_key') return 'неверный или просроченный API-ключ (401/403)';
+  if(code==='not_found') return 'игрок не найден — проверь никнейм/Player ID (404)';
+  if(code.startsWith('faceit_')) return 'Faceit API вернул ошибку '+code.replace('faceit_','');
+  return code||'неизвестная ошибка';
+}
+function faceitFindFaction(match,playerId){
+  const teams=match.teams||{};
+  for(const key of ['faction1','faction2']){
+    const team=teams[key];
+    if(team&&Array.isArray(team.players)&&team.players.some(p=>p.player_id===playerId)) return key;
+  }
+  return null;
+}
+async function fetchFaceitSummary(nickname,playerId,steamId){
+  // Приоритет: Player ID (напрямую) → Steam ID64 (game_player_id) → никнейм
+  let player;
+  if(playerId){
+    player=await faceitApi('/players/'+encodeURIComponent(playerId));
+  }else if(steamId){
+    player=await faceitApi('/players?game=cs2&game_player_id='+encodeURIComponent(steamId));
+  }else{
+    player=await faceitApi('/players?nickname='+encodeURIComponent(nickname));
+  }
+  const games=player.games||{};
+  const gameKey=games.cs2?'cs2':(games.csgo?'csgo':null);
+  const elo=gameKey?games[gameKey].faceit_elo:null;
+  let wins=0,losses=0;
+  if(gameKey){
+    const startOfDay=new Date(); startOfDay.setHours(0,0,0,0);
+    const from=Math.floor(startOfDay.getTime()/1000);
+    const to=Math.floor(Date.now()/1000);
+    try{
+      const hist=await faceitApi(`/players/${player.player_id}/history?game=${gameKey}&from=${from}&to=${to}&limit=100`);
+      (hist.items||[]).forEach(m=>{
+        const winner=m.results&&m.results.winner;
+        const mine=faceitFindFaction(m,player.player_id);
+        if(!winner||!mine) return;
+        if(winner===mine) wins++; else losses++;
+      });
+    }catch(e){}
+  }
+  const finalNickname=player.nickname||nickname;
+  return {nickname:finalNickname,elo,wins,losses,statsLink:faceitAnalyserUrl(finalNickname)};
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   STREAM MANAGEMENT
+   ══════════════════════════════════════════════════════════════════════ */
+async function changeTitle(title, fromChat, caller){
+  if(!title){
+    if(fromChat) sendChat(`@${caller}, укажи название: !title Моё название стрима`);
+    return;
+  }
+  if(!BROADCASTER || !BROADCASTER.token){
+    if(fromChat) sendChat(`@${caller}, стримеру нужно авторизоваться в панели для команды !title`);
+    else toast('Авторизуйтесь через Twitch для смены названия','err');
+    return;
+  }
+  if(!broadcasterId) await resolveBroadcasterId();
+  if(!broadcasterId){ if(fromChat) sendChat(`@${caller}, не удалось получить ID канала`); return; }
+  try{
+    await helixPatch(`/channels?broadcaster_id=${broadcasterId}`, { title });
+    if(fromChat) sendChat(`✅ Название стрима изменено: ${title}`);
+    else toast('✅ Название обновлено','ok');
+    setTimeout(refreshStreamInfo, 1500);
+  }catch(e){
+    if(fromChat) sendChat(`@${caller}, ошибка: ${e.message}`);
+    else toast('Ошибка: '+e.message,'err');
+  }
+}
+
+async function changeCategory(gameName, fromChat, caller){
+  if(!gameName){
+    if(fromChat) sendChat(`@${caller}, укажи категорию: !category Minecraft`);
+    return;
+  }
+  if(!BROADCASTER || !BROADCASTER.token){
+    if(fromChat) sendChat(`@${caller}, стримеру нужно авторизоваться в панели для команды !category`);
+    else toast('Авторизуйтесь через Twitch для смены категории','err');
+    return;
+  }
+  if(!broadcasterId) await resolveBroadcasterId();
+  if(!broadcasterId){ if(fromChat) sendChat(`@${caller}, не удалось получить ID канала`); return; }
+  try{
+    const game = await lookupGame(gameName);
+    if(!game){
+      if(fromChat) sendChat(`@${caller}, категория «${gameName}» не найдена на Twitch`);
+      else toast(`Категория «${gameName}» не найдена`, 'err');
+      return;
+    }
+    await helixPatch(`/channels?broadcaster_id=${broadcasterId}`, { game_id: game.id });
+    if(fromChat) sendChat(`✅ Категория изменена: ${game.name}`);
+    else toast(`✅ Категория: ${game.name}`, 'ok');
+    setTimeout(refreshStreamInfo, 1500);
+  }catch(e){
+    if(fromChat) sendChat(`@${caller}, ошибка: ${e.message}`);
+    else toast('Ошибка: '+e.message,'err');
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   IRC
+   ══════════════════════════════════════════════════════════════════════ */
+const IRC = {
+  ws:null, connected:false, msgCount:0,
+  uniqueUsers:new Set(), activity:[],
+  intentionalClose:false, reconnectDelay:2000, reconnectTimer:null
+};
+
+function parseIRC(raw){
+  let tags={}, rest=raw;
+  if(raw.startsWith('@')){
+    const sp=raw.indexOf(' ');
+    raw.slice(1,sp).split(';').forEach(kv=>{ const i=kv.indexOf('='); tags[kv.slice(0,i)]=kv.slice(i+1); });
+    rest=raw.slice(sp+1);
+  }
+  let prefix='';
+  if(rest.startsWith(':')){ const sp=rest.indexOf(' '); prefix=rest.slice(1,sp); rest=rest.slice(sp+1); }
+  let trailing='';
+  const ti=rest.indexOf(' :');
+  let paramPart=rest;
+  if(ti!==-1){ trailing=rest.slice(ti+2); paramPart=rest.slice(0,ti); }
+  const parts=paramPart.trim().split(' ').filter(Boolean);
+  const command=parts.shift();
+  return { tags, prefix, command, params:parts, trailing };
+}
+
+function ircConnect(){
+  if(IRC.reconnectTimer){ clearTimeout(IRC.reconnectTimer); IRC.reconnectTimer=null; }
+  if(IRC.ws){
+    try{
+      // Отвязываем обработчики старого сокета, чтобы его асинхронный onclose
+      // не запускал повторное переподключение поверх уже нового соединения.
+      IRC.ws.onclose=null;
+      IRC.ws.onerror=null;
+      IRC.ws.onmessage=null;
+      IRC.ws.close();
+    }catch(e){}
+  }
+  IRC.intentionalClose=false;
+  const token = getBotToken();
+  if(!token){
+    setIrcStatus('⚠ нет токена бота');
+    // показываем баннер если токена нет
+    const banner = document.getElementById('noTokenBanner');
+    if(banner) banner.classList.remove('hidden');
+    return;
+  }
+  setIrcStatus('подключение…');
+  const ws = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+  IRC.ws = ws;
+  ws.onopen=()=>{
+    ws.send('CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership');
+    ws.send('PASS oauth:'+token);
+    ws.send('NICK '+BOT_LOGIN);
+    ws.send('JOIN #'+CHANNEL);
+  };
+  ws.onmessage=(ev)=>{ ev.data.split('\r\n').filter(Boolean).forEach(l=>handleIrcLine(l)); };
+  ws.onclose=()=>{
+    IRC.connected=false; setIrcStatus('отключено');
+    if(!IRC.intentionalClose){
+      setIrcStatus('переподключение…');
+      IRC.reconnectTimer=setTimeout(()=>{ IRC.reconnectDelay=Math.min(IRC.reconnectDelay*1.6,30000); ircConnect(); }, IRC.reconnectDelay);
+    }
+  };
+  ws.onerror=()=>setIrcStatus('ошибка');
+}
+
+function ircDisconnect(){
+  IRC.intentionalClose=true;
+  if(IRC.reconnectTimer){ clearTimeout(IRC.reconnectTimer); IRC.reconnectTimer=null; }
+  if(IRC.ws) try{ IRC.ws.close(); }catch(e){}
+}
+
+function setIrcStatus(text){ const el=document.getElementById('ircStatusLabel'); if(el) el.textContent=text; }
+
+function handleIrcLine(line){
+  if(line.startsWith('PING')){ IRC.ws.send('PONG :tmi.twitch.tv'); return; }
+  const msg=parseIRC(line);
+  switch(msg.command){
+    case '001':
+      IRC.connected=true; IRC.reconnectDelay=2000;
+      setIrcStatus('подключено');
+      toast('leimtwitch подключился к #'+CHANNEL,'ok');
+      break;
+    case 'NOTICE':
+      if(msg.trailing && (msg.trailing.includes('authentication failed') || msg.trailing.includes('Login authentication'))){
+        setIrcStatus('❌ ошибка токена');
+        toast('Токен бота истёк! Обновите токен в Настройках → Токен бота','err');
+      } else if(msg.trailing){
+        pushChatLine({event:true, text:msg.trailing});
+      }
+      break;
+    case 'PRIVMSG': onChatMessage(msg); break;
+    case 'CLEARCHAT': onClearChat(msg); break;
+    case 'USERNOTICE': onUserNotice(msg); break;
+    case 'ROOMSTATE': break;
+  }
+}
+
+function sendChat(text){
+  if(!IRC.ws||!IRC.connected){ toast('Бот не подключён к чату','err'); return; }
+  // Twitch лимит 500 символов
+  if(text.length>499) text=text.slice(0,499);
+  IRC.ws.send('PRIVMSG #'+CHANNEL+' :'+text);
+  if(!text.startsWith('/')&&!text.startsWith('.')){
+    pushChatLine({username:BOT_LOGIN,displayName:BOT_LOGIN,message:text,color:'#8B6CFA',badges:{}});
+  }
+}
+function sendModCmd(cmd){ sendChat('/'+cmd); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   CHAT RENDER
+   ══════════════════════════════════════════════════════════════════════ */
+let chatUnread=0;
+function pushChatLine(data){
+  const log=document.getElementById('chatlog');
+  const panelEl=document.getElementById('panel-chat');
+  const chatPanelActive=!!(panelEl&&panelEl.classList.contains('active'));
+  const nearBottom=chatPanelActive?(log.scrollHeight-log.scrollTop-log.clientHeight<80):true;
+  const div=document.createElement('div');
+  const ts=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  if(data.event){
+    div.className='chat-line event'+(data.kind?' k-'+data.kind:'');
+    div.innerHTML=`<span class="ts">${ts}</span>${highlightMentions(escapeHtml(data.text))}`;
+  }else{
+    div.className='chat-line';
+    let badges='';
+    if(data.badges){
+      if(data.badges.broadcaster) badges+='<span class="badge broadcaster">👑 СТРИМЕР</span>';
+      else if(data.badges.mod) badges+='<span class="badge mod">🛡 MOD</span>';
+      if(data.badges.vip) badges+='<span class="badge vip">💎 VIP</span>';
+      if(data.badges.subscriber) badges+='<span class="badge sub">⭐ SUB</span>';
+    }
+    const color=data.color&&data.color!==''?data.color:'#8985A3';
+    div.innerHTML=`<span class="ts">${ts}</span>${badges}<span class="uname" style="color:${color}">${escapeHtml(data.displayName||data.username)}</span>: ${highlightMentions(escapeHtml(data.message))}`;
+  }
+  log.appendChild(div);
+  while(log.children.length>400) log.removeChild(log.firstChild);
+
+  if(chatPanelActive){
+    if(nearBottom){ log.scrollTop=log.scrollHeight; hideNewPill(); }
+    else{ chatUnread++; showNewPill(); }
+  }else{
+    const dot=document.getElementById('chatNavDot');
+    if(dot) dot.classList.add('show');
+  }
+}
+function showNewPill(){
+  const pill=document.getElementById('chatNewPill');
+  if(!pill) return;
+  const word=chatUnread===1?'новое сообщение':(chatUnread%10>=2&&chatUnread%10<=4&&(chatUnread%100<10||chatUnread%100>=20)?'новых сообщения':'новых сообщений');
+  pill.textContent='↓ '+chatUnread+' '+word;
+  pill.classList.add('show');
+}
+function hideNewPill(){
+  chatUnread=0;
+  const pill=document.getElementById('chatNewPill');
+  if(pill) pill.classList.remove('show');
+}
+
+let ACTIVE_CHATTERS=new Map();
+
+function onChatMessage(msg){
+  const tags=msg.tags;
+  const username=(msg.prefix.split('!')[0])||tags['display-name']?.toLowerCase()||'unknown';
+  const displayName=tags['display-name']||username;
+  const message=msg.trailing;
+  const badgesRaw=tags['badges']||'';
+  const badges={
+    broadcaster: badgesRaw.includes('broadcaster') || username===CHANNEL,
+    mod: tags['mod']==='1'||badgesRaw.includes('moderator'),
+    subscriber: tags['subscriber']==='1'||badgesRaw.includes('subscriber'),
+    vip: badgesRaw.includes('vip')
+  };
+  const isPrivileged=badges.broadcaster||badges.mod||badges.vip;
+  IRC.msgCount++; IRC.uniqueUsers.add(username); IRC.activity.push(Date.now());
+  ACTIVE_CHATTERS.set(username,{ts:Date.now(),displayName,badges});
+  pushChatLine({username,displayName,message,color:tags['color'],badges});
+  updateOverviewStats(); renderActiveChatters();
+  if(!isPrivileged && checkModeration(message,username,displayName)) return;
+  Economy.onMessage(username,displayName);
+  Games.onMessage(username,displayName,message,badges);
+  Commands.onMessage(username,displayName,message,badges);
+}
+
+function onClearChat(msg){
+  const user=msg.trailing;
+  if(user) pushChatLine({event:true,kind:'mod',text:`⛔ ${user} получил тайм-аут/бан`});
+}
+function onUserNotice(msg){
+  const t=msg.tags['msg-id'];
+  const login=msg.tags['display-name']||msg.tags['login']||'';
+  if(t==='sub'||t==='resub') pushChatLine({event:true,kind:'sub',text:`⭐ ${login} оформил(а) подписку!`});
+  else if(t==='subgift') pushChatLine({event:true,kind:'gift',text:`🎁 ${login} подарил(а) подписку`});
+  else if(t==='raid') pushChatLine({event:true,kind:'raid',text:`🚀 Рейд от ${login}! Приветствуем!`});
+  if(msg.trailing) pushChatLine({event:true,text:msg.trailing});
+}
+
+function renderActiveChatters(){
+  const box=document.getElementById('activeChatters');
+  const now=Date.now();
+  const entries=[...ACTIVE_CHATTERS.entries()].filter(([,v])=>now-v.ts<10*60*1000).sort((a,b)=>b[1].ts-a[1].ts).slice(0,40);
+  if(!entries.length){ box.innerHTML='<div class="empty">Пока никто не писал</div>'; return; }
+  box.innerHTML=entries.map(([u,v])=>`<span class="tag on" style="margin:0 6px 6px 0;display:inline-block">${escapeHtml(v.displayName)}</span>`).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   MODERATION
+   ══════════════════════════════════════════════════════════════════════ */
+function getModSettings(){ return load('mod_settings',{enabled:false,badwords:[],links:false,capsLimit:80,repeatLimit:5,action:'delete'}); }
+let lastMsgByUser={};
+function checkModeration(message,username,displayName){
+  const s=getModSettings();
+  if(!s.enabled) return false;
+  let violated=null;
+  const low=message.toLowerCase();
+  if(s.badwords&&s.badwords.length){ for(const w of s.badwords){ if(w&&low.includes(w.toLowerCase())){ violated='запрещённое слово'; break; } } }
+  if(!violated&&s.links&&/(https?:\/\/|www\.|\.(com|net|ru|tv|gg|io|xyz)\b)/i.test(message)) violated='ссылка';
+  if(!violated&&s.capsLimit<100){
+    const letters=message.replace(/[^a-zA-Zа-яА-ЯёЁ]/g,'');
+    if(letters.length>=8){ const caps=letters.replace(/[^A-ZА-ЯЁ]/g,'').length; if((caps/letters.length)*100>s.capsLimit) violated='капс'; }
+  }
+  if(!violated&&s.repeatLimit){
+    const prev=lastMsgByUser[username];
+    lastMsgByUser[username]={ text:low, count:prev&&prev.text===low?prev.count+1:1 };
+    if(lastMsgByUser[username].count>s.repeatLimit) violated='спам';
+  } else if(!violated) { lastMsgByUser[username]={text:low,count:1}; }
+  if(violated){
+    logMod(`${displayName}: ${violated} → ${s.action}`);
+    if(s.action==='delete') sendModCmd('timeout '+username+' 1');
+    else if(s.action==='timeout') sendModCmd('timeout '+username+' 60 '+violated);
+    else sendChat(`@${displayName}, соблюдай правила чата (${violated}).`);
+    return true;
+  }
+  return false;
+}
+function logMod(text){
+  const box=document.getElementById('modLog');
+  if(box.querySelector('.empty')) box.innerHTML='';
+  const div=document.createElement('div');
+  div.className='chat-line mono'; div.style.fontSize='12px';
+  div.textContent=new Date().toLocaleTimeString('ru-RU')+' — '+text;
+  box.prepend(div);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ECONOMY
+   ══════════════════════════════════════════════════════════════════════ */
+const Economy={
+  settings(){ return load('eco_settings',{name:'очки',rate:1,msgBonus:1}); },
+  balances(){ return load('eco_balances',{}); },
+  saveBalances(b){ save('eco_balances',b); },
+  get(u){ return this.balances()[u]||0; },
+  add(u,amt){
+    const b=this.balances();
+    b[u]=Math.max(0,Math.round((b[u]||0)+amt));
+    this.saveBalances(b); return b[u];
+  },
+  onMessage(username,displayName){
+    const s=this.settings(); this.add(username,s.msgBonus||0);
+    const b=this.balances(); b[username+'__name']=displayName; this.saveBalances(b);
+  },
+  top(n){
+    const b=this.balances();
+    return Object.entries(b).filter(([k])=>!k.endsWith('__name')).sort((a,b2)=>b2[1]-a[1]).slice(0,n||10)
+      .map(([user,pts])=>({user,pts,name:b[user+'__name']||user}));
+  }
+};
+
+let ecoTickTimer=null;
+function startEconomyTicker(){
+  if(ecoTickTimer) clearInterval(ecoTickTimer);
+  ecoTickTimer=setInterval(()=>{
+    const s=Economy.settings(); if(!s.rate) return;
+    const now=Date.now();
+    ACTIVE_CHATTERS.forEach((v,u)=>{ if(now-v.ts<6*60*1000) Economy.add(u,s.rate); });
+    renderEconomyPanel(); renderOverviewTop();
+  },60*1000);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   COMMANDS
+   ══════════════════════════════════════════════════════════════════════ */
+const Commands={
+  settings(){ return load('cmd_settings',{prefix:'!',globalCooldown:3}); },
+  list(){ return load('cmd_list',DEFAULT_COMMANDS()); },
+  saveList(l){ save('cmd_list',l); },
+  cooldowns:{},
+  builtinCooldowns:{},
+  onMessage(username,displayName,message,badges){
+    const s=this.settings(), prefix=s.prefix||'!';
+    if(!message.startsWith(prefix)) return;
+    const parts=message.slice(prefix.length).trim().split(/\s+/);
+    const name=parts[0].toLowerCase(), args=parts.slice(1);
+    if(!name) return;
+    if(BUILTIN_COMMANDS[name]){
+      const bcfg=BuiltinConfig.get(name);
+      if(bcfg.enabled===false) return;
+      const perm=bcfg.permission||'everyone';
+      if(perm==='mod'&&!(badges.mod||badges.broadcaster)) return;
+      if(perm==='sub'&&!(badges.subscriber||badges.mod||badges.broadcaster)) return;
+      const bnow=Date.now(), bcd=(bcfg.cooldown!=null?bcfg.cooldown:10)*1000;
+      if(this.builtinCooldowns[name]&&bnow-this.builtinCooldowns[name]<bcd) return;
+      this.builtinCooldowns[name]=bnow;
+      BUILTIN_COMMANDS[name](username,displayName,args,badges); return;
+    }
+    const cmd=this.list().find(c=>c.name.toLowerCase()===name&&c.enabled!==false);
+    if(!cmd) return;
+    if(cmd.permission==='mod'&&!(badges.mod||badges.broadcaster)) return;
+    if(cmd.permission==='sub'&&!(badges.subscriber||badges.mod||badges.broadcaster)) return;
+    const now=Date.now(), cdKey=cmd.name;
+    const cd=(cmd.cooldown!=null?cmd.cooldown:s.globalCooldown)*1000;
+    if(this.cooldowns[cdKey]&&now-this.cooldowns[cdKey]<cd) return;
+    this.cooldowns[cdKey]=now;
+    cmd.uses=(cmd.uses||0)+1;
+    const list=this.list(); const idx=list.findIndex(c=>c.name===cmd.name);
+    if(idx>=0){ list[idx]=cmd; this.saveList(list); }
+    sendChat(fillPlaceholders(cmd.response,{user:displayName,channel:CHANNEL,count:cmd.uses}));
+  }
+};
+
+function fillPlaceholders(text,ctx){
+  return text
+    .replace(/\{user\}/g,ctx.user||'')
+    .replace(/\{channel\}/g,ctx.channel||'')
+    .replace(/\{count\}/g,ctx.count!=null?ctx.count:'')
+    .replace(/\{random\}/g,Math.floor(Math.random()*100)+1);
+}
+
+function DEFAULT_COMMANDS(){
+  return [
+    {name:'лурк',   response:'{user} уходит в тень лурка 👀 спасибо, что с нами!',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'обнять',    response:'@{user} обнимает всех в чате 🤗 ты лучший!',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'дискорд',response:'Ссылка на Discord — попроси стримера обновить эту команду.',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'шаутаут',     response:'Загляните на канал @{user} — крутой стример! twitch.tv/{user}',cooldown:10,permission:'mod',enabled:true,uses:0},
+    {name:'ф',      response:'F в чат за @{user} 🕯️',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'гг',     response:'GG WP! 🎮 Хороший стрим, спасибо!',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'сдаюсь',     response:'@{user} хочет сдаться 🏳️ но стрим продолжается! стоп не жди',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'пог',    response:'PogChamp POGGERS POG 🐸 @{user} в восторге!',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'лол',    response:'lmao kek 😂 @{user} умирает со смеху',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'привет',     response:'Привет, @{user}! 👋 Добро пожаловать в чат!',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'пока',    response:'@{user} покидает чат... до скорого! 👋',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'любовь',   response:'@{user} отправляет любовь в чат ❤️',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'плакать',    response:'@{user} рыдает в чате 😭',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'вау',    response:'ВАУ! 😲 @{user} в шоке от происходящего',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'вечеринка',  response:'🎉 @{user} устраивает вечеринку в чате! PartyTime',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'рип',    response:'RIP 💀 @{user} почтил память павшего в бою',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'чилл',  response:'✨ @{user} ловит чилл-вайб этого стрима',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'доверие',  response:'TrustNo1 @{user} никому не доверяет 🕵️',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'круто',   response:'Nice! 👌 @{user} одобряет происходящее',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'легко',     response:'EZ Clap 👏 @{user} говорит, что это было легко',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'подозрительно',    response:'😳 @{user} считает, что тут кто-то ведёт себя подозрительно (SUS)',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'чат',response:'@{user} просто чатится 💬 ничего особенного',cooldown:10,permission:'everyone',enabled:true,uses:0},
+  ];
+}
+
+/* Одноразовая миграция: приводит уже сохранённый у пользователя список команд
+   к актуальному набору (убирает старые, добавляет новые), не трогая
+   пользовательские команды и внесённые правки. */
+function migrateDefaultCommands(){
+  const FLAG='cmd_defaults_v3';
+  if(load(FLAG,false)) return;
+  const REMOVE=['oof','copium','sadge','peepo','clip','w','l'];
+  const ADD=[
+    {name:'привет',      response:'Привет, @{user}! 👋 Добро пожаловать в чат!',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'пока',     response:'@{user} покидает чат... до скорого! 👋',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'любовь',    response:'@{user} отправляет любовь в чат ❤️',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'плакать',     response:'@{user} рыдает в чате 😭',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'вау',     response:'ВАУ! 😲 @{user} в шоке от происходящего',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'вечеринка',   response:'🎉 @{user} устраивает вечеринку в чате! PartyTime',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'рип',     response:'RIP 💀 @{user} почтил память павшего в бою',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'чилл',   response:'✨ @{user} ловит чилл-вайб этого стрима',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'доверие',   response:'TrustNo1 @{user} никому не доверяет 🕵️',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'круто',    response:'Nice! 👌 @{user} одобряет происходящее',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'легко',      response:'EZ Clap 👏 @{user} говорит, что это было легко',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'подозрительно',     response:'😳 @{user} считает, что тут кто-то ведёт себя подозрительно (SUS)',cooldown:10,permission:'everyone',enabled:true,uses:0},
+    {name:'чат',response:'@{user} просто чатится 💬 ничего особенного',cooldown:10,permission:'everyone',enabled:true,uses:0},
+  ];
+  const list=load('cmd_list',null);
+  if(list && Array.isArray(list)){
+    let out=list.filter(c=>!REMOVE.includes((c.name||'').toLowerCase()));
+    ADD.forEach(nc=>{
+      if(!out.find(c=>(c.name||'').toLowerCase()===nc.name)) out.push(nc);
+    });
+    save('cmd_list',out);
+  }
+  save(FLAG,true);
+}
+
+/* ──────────────────────────────────────────────────────────
+   BUILTIN CONFIG  (enable/disable + response overrides)
+   ────────────────────────────────────────────────────────── */
+const BUILTIN_META=[
+  {name:'очки',  label:'!очки',   desc:'Баланс очков',         group:'Экономика', canEdit:true,  template:'@{user}, у тебя {pts} {currency}.', vars:'{user} {pts} {currency}'},
+  {name:'топ',     label:'!топ',      desc:'Топ зрителей',         group:'Экономика', canEdit:true,  template:'🏆 Топ: {list}', vars:'{list} — форматированный список'},
+  {name:'дать',    label:'!дать',     desc:'Передать очки',        group:'Экономика', canEdit:true,  template:'@{from} передал(а) {amt} {currency} → {to} 💸 (осталось: {balance})', vars:'{from} {to} {amt} {currency} {balance}'},
+  {name:'ставка',  label:'!ставка',   desc:'Ставка (победа/проигрыш)', group:'Экономика', canEdit:true, type:'win_lose', templateWin:'🎲 @{user} выиграл(а) {amt}! Баланс: {balance} {currency} 🎉', templateLose:'🎲 @{user} проиграл(а) {amt}. Баланс: {balance} {currency}', vars:'{user} {amt} {balance} {currency}'},
+  {name:'слоты',   label:'!слоты',    desc:'Слоты (результат)',    group:'Экономика', canEdit:true,  template:'🎰 [ {roll} ] @{user} {result} {currency}. Баланс: {balance}', vars:'{user} {roll} {result} {balance} {currency}'},
+  {name:'рулетка',label:'!рулетка', desc:'Рулетка 1–100',        group:'Развлечения',canEdit:true,  template:'{emoji} @{user} выбивает {n} из 100!', vars:'{user} {n} {emoji}'},
+  {name:'кубик',    label:'!кубик [N]', desc:'Кубик (по умолчанию d6)',group:'Развлечения',canEdit:true, template:'🎲 @{user} бросает d{sides} → {result}', vars:'{user} {sides} {result}'},
+  {name:'шар',   label:'!шар',    desc:'Магический шар',       group:'Развлечения',canEdit:true,  type:'answers'},
+  {name:'аптайм',  label:'!аптайм',   desc:'Время стрима',         group:'Инфо',      canEdit:true,  template:'⏱ @{user}, стрим идёт {h}ч {m}м', vars:'{user} {h} {m}'},
+  {name:'команды',label:'!команды', desc:'Список команд в чат',  group:'Инфо',      canEdit:true,  template:'📋 Команды: {list}', vars:'{list} — список команд'},
+  {name:'анаграмма', label:'!анаграмма',  desc:'Запуск анаграммы',     group:'Игры',      canEdit:true,  template:'🔤 Анаграмма! Угадай слово: {scrambled} → пишите !угадай слово', vars:'{scrambled}', defaultPerm:'mod'},
+  {name:'математика',    label:'!математика',     desc:'Запуск математики',    group:'Игры',      canEdit:true,  template:'➗ Реши пример: {expr} = ? (первый правильный ответ в чат)', vars:'{expr}', defaultPerm:'mod'},
+  {name:'голос',      label:'!голос N',         desc:'Голосование',              group:'Игры',      canEdit:false},
+  {name:'название',     label:'!название',          desc:'Изменить название стрима', group:'Стрим',     canEdit:false, defaultPerm:'mod'},
+  {name:'категория',  label:'!категория',       desc:'Изменить категорию',       group:'Стрим',     canEdit:false, defaultPerm:'mod'},
+  /* ── Вайб-команды ── */
+  {name:'ежедневка',     label:'!ежедневка',          desc:'Ежедневный бонус (раз в 24ч)',group:'Экономика+',canEdit:true, template:'📅 @{user}, ты получил ежедневный бонус: +{amt} {currency}! Следующий — через 24ч 🎁', vars:'{user} {amt} {currency}'},
+  {name:'работа',      label:'!работа',           desc:'Заработать очки (кулдаун)',  group:'Экономика+',canEdit:true, template:'💼 @{user} поработал(а) и заработал(а) {amt} {currency}! Усталость: {tiredness}', vars:'{user} {amt} {currency} {tiredness}'},
+  {name:'украсть',     label:'!украсть @цель',    desc:'Украсть очки (50/50)',       group:'Экономика+',canEdit:false},
+  {name:'дуэль',      label:'!дуэль @цель сумма',desc:'Вызов на дуэль',           group:'Экономика+',canEdit:false},
+  {name:'лут',      label:'!лут',           desc:'Случайный лут (редкость)',   group:'Вайб',      canEdit:false},
+  {name:'монетка',  label:'!монетка [орёл/решка]',desc:'Монетка',            group:'Вайб',      canEdit:true, template:'🪙 @{user} подбрасывает монету... {result}!', vars:'{user} {result}'},
+  {name:'футболка',  label:'!футболка',      desc:'Случайно снимает или надевает футболку', group:'Вайб', canEdit:true, template:'👕 @{user} {result}', vars:'{user} {result}'},
+  {name:'кс',        label:'!кс',            desc:'Случайный раунд CS (победа/поражение за КТ/ТТ)', group:'Вайб', canEdit:true, template:'{emoji} @{user} {result}!', vars:'{user} {result} {emoji}'},
+  {name:'эло',       label:'!эло',           desc:'Faceit ELO и статистика за сегодня', group:'Инфо', canEdit:true, template:'🎮 {nickname} — ELO: {elo} · Сегодня: {wins}W / {losses}L', vars:'{nickname} {elo} {wins} {losses} {statsLink}'},
+  {name:'67',        label:'!67',            desc:'Сделал 67 или сиксевен не удался',   group:'Вайб', canEdit:true, template:'{emoji} @{user} {result}', vars:'{user} {result} {emoji}'},
+  {name:'температура',label:'!температура [@user]',desc:'Температура тела (рандом)',  group:'Вайб', canEdit:true, template:'🌡️ @{user}: {temp}°C — {label}', vars:'{user} {temp} {label}'},
+  {name:'писька',    label:'!писька [@user]',desc:'Размер (рандом, см)',            group:'Вайб', canEdit:true, template:'🍆 @{user}: {size} см {bar}', vars:'{user} {size} {bar}'},
+  {name:'вайб',      label:'!вайб',           desc:'Вайб-чек',                  group:'Вайб',      canEdit:false},
+  {name:'айкью',        label:'!айкью [@user]',     desc:'Проверка IQ',               group:'Вайб',      canEdit:true, template:'🧠 IQ @{user}: {iq} — {label}', vars:'{user} {iq} {label}'},
+  {name:'размер',        label:'!размер [@user]',     desc:'Классика Twitch',           group:'Вайб',      canEdit:false},
+  {name:'пара',      label:'!пара имя1 имя2', desc:'Совместимость пары',        group:'Вайб',      canEdit:true, template:'💕 {a} ❤️ {b}: {pct}% {bar}', vars:'{a} {b} {pct} {bar}'},
+  {name:'оценка',      label:'!оценка [текст]',   desc:'Оценить что угодно',        group:'Вайб',      canEdit:true, template:'📊 @{user} оценивает «{thing}»: {score}/10 {stars}', vars:'{user} {thing} {score} {stars}'},
+  {name:'роаст',     label:'!роаст [@user]',  desc:'Шуточный роуст',            group:'Вайб',      canEdit:false},
+  {name:'комплимент',label:'!комплимент [@user]',desc:'Комплимент',            group:'Вайб',      canEdit:false},
+  {name:'погладить',       label:'!погладить [@user]',    desc:'Погладить пользователя',    group:'Вайб',      canEdit:true, template:'( ˘ω˘ ) @{from} гладит @{to} по голове... peepoLove', vars:'{from} {to}'},
+  {name:'бонк',      label:'!бонк [@user]',   desc:'Бонк',                      group:'Вайб',      canEdit:true, template:'🔨 BONK! @{from} бьёт @{to} молотком в голову', vars:'{from} {to}'},
+  {name:'шлепок',      label:'!шлепок [@user]',   desc:'Дать пощёчину',             group:'Вайб',      canEdit:true, template:'👋 @{from} отвешивает оплеуху @{to}!', vars:'{from} {to}'},
+  {name:'поцелуй',      label:'!поцелуй [@user]',   desc:'Поцелуй',                   group:'Вайб',      canEdit:true, template:'💋 @{from} целует @{to} 🌹', vars:'{from} {to}'},
+  {name:'укус',      label:'!укус [@user]',   desc:'Укусить',                   group:'Вайб',      canEdit:true, template:'🦷 @{from} кусает @{to}! ОУЧ', vars:'{from} {to}'},
+  {name:'рандом',    label:'!рандом N',       desc:'Случайное число от 1 до N', group:'Вайб',      canEdit:true, template:'🎲 @{user} выбирает: {result} (из {max})', vars:'{user} {result} {max}'},
+  {name:'погода',   label:'!погода',        desc:'Случайная погода',          group:'Вайб',      canEdit:false},
+  {name:'предсказание',   label:'!предсказание [текст]',desc:'Предсказание',              group:'Вайб',      canEdit:false},
+  {name:'аски',     label:'!аски [текст]',  desc:'ASCII-арт из текста',       group:'Вайб',      canEdit:false},
+];
+
+const BuiltinConfig={
+  _defaults(){
+    const d={};
+    BUILTIN_META.forEach(m=>{
+      d[m.name]={enabled:true,permission:m.defaultPerm||'everyone',cooldown:m.defaultCooldown!=null?m.defaultCooldown:10};
+      if(m.canEdit && m.type!=='answers' && m.type!=='win_lose') d[m.name].response=m.template;
+      if(m.canEdit && m.type==='win_lose'){ d[m.name].responseWin=m.templateWin; d[m.name].responseLose=m.templateLose; }
+    });
+    return d;
+  },
+  get(name){
+    const d=this._defaults();
+    const stored=load('builtin_cfg',{});
+    return Object.assign({},d[name]||{enabled:true,permission:'everyone'},stored[name]||{});
+  },
+  getAll(){
+    const d=this._defaults();
+    const stored=load('builtin_cfg',{});
+    const r={};
+    Object.keys(d).forEach(k=>{ r[k]=Object.assign({},d[k],stored[k]||{}); });
+    return r;
+  },
+  set(name,patch){
+    const stored=load('builtin_cfg',{});
+    stored[name]=Object.assign({},stored[name]||{},patch);
+    save('builtin_cfg',stored);
+  },
+  toggle(name){
+    const cur=this.get(name);
+    this.set(name,{enabled:!cur.enabled});
+  }
+};
+
+/* ── 8ball ── */
+const EIGHTBALL=['Однозначно да! 🎱','Без сомнений. 🎱','Да! 🎱','Скорее всего да. 🎱','Похоже на то. 🎱','Спроси снова. 🎱','Сложно сказать. 🎱','Лучше не отвечать. 🎱','Вряд ли. 🎱','Нет. 🎱','Точно нет. 🎱','Мои источники говорят нет. 🎱'];
+
+const BUILTIN_COMMANDS={
+  /* Экономика */
+  'очки':(u,d)=>{
+    const cfg=BuiltinConfig.get('очки');
+    const tpl=cfg.response||'@{user}, у тебя {pts} {currency}.';
+    sendChat(tpl.replace(/\{user\}/g,d).replace(/\{pts\}/g,Economy.get(u)).replace(/\{currency\}/g,Economy.settings().name));
+  },
+  'счёт': (u,d)=>BUILTIN_COMMANDS['очки'](u,d),
+  'баланс':(u,d)=>BUILTIN_COMMANDS['очки'](u,d),
+  'топ':(u,d)=>{
+    const t=Economy.top(5);
+    if(!t.length){ sendChat('Пока никто не заработал очков.'); return; }
+    const cfg=BuiltinConfig.get('топ');
+    const list=t.map((r,i)=>`${i+1}. ${r.name} — ${r.pts}`).join(' | ');
+    const tpl=cfg.response||'🏆 Топ: {list}';
+    sendChat(tpl.replace(/\{list\}/g,list));
+  },
+  'дать':(u,d,args)=>{
+    const target=(args[0]||'').replace('@','').toLowerCase();
+    const amt=parseInt(args[1],10);
+    if(!target||!amt||amt<=0){ sendChat(`@${d}, используй: !дать ник сумма`); return; }
+    if(Economy.get(u)<amt){ sendChat(`@${d}, недостаточно очков (есть: ${Economy.get(u)}).`); return; }
+    Economy.add(u,-amt); Economy.add(target,amt);
+    const entry=ACTIVE_CHATTERS.get(target);
+    if(entry){ const b=Economy.balances(); if(!b[target+'__name']) b[target+'__name']=entry.displayName; Economy.saveBalances(b); }
+    const cfg=BuiltinConfig.get('дать');
+    const cur=Economy.settings().name;
+    const tpl=cfg.response||'@{from} передал(а) {amt} {currency} → {to} 💸 (осталось: {balance})';
+    sendChat(tpl.replace(/\{from\}/g,d).replace(/\{to\}/g,target).replace(/\{amt\}/g,amt).replace(/\{currency\}/g,cur).replace(/\{balance\}/g,Economy.get(u)));
+    renderEconomyPanel();
+  },
+  'ставка':(u,d,args)=>{
+    const bal=Economy.get(u);
+    const amt=args[0]==='all'?bal:parseInt(args[0],10);
+    if(!amt||amt<=0||amt>bal){ sendChat(`@${d}, укажи ставку или all. Баланс: ${bal}`); return; }
+    const win=Math.random()<0.45;
+    const cfg=BuiltinConfig.get('ставка');
+    const cur=Economy.settings().name;
+    if(win){
+      Economy.add(u,amt);
+      const tpl=cfg.responseWin||'🎲 @{user} выиграл(а) {amt}! Баланс: {balance} {currency} 🎉';
+      sendChat(tpl.replace(/\{user\}/g,d).replace(/\{amt\}/g,amt).replace(/\{balance\}/g,Economy.get(u)).replace(/\{currency\}/g,cur));
+    }else{
+      Economy.add(u,-amt);
+      const tpl=cfg.responseLose||'🎲 @{user} проиграл(а) {amt}. Баланс: {balance} {currency}';
+      sendChat(tpl.replace(/\{user\}/g,d).replace(/\{amt\}/g,amt).replace(/\{balance\}/g,Economy.get(u)).replace(/\{currency\}/g,cur));
+    }
+    renderEconomyPanel();
+  },
+  'слоты':(u,d,args)=>{
+    const bal=Economy.get(u);
+    const amt=parseInt(args[0],10);
+    if(!amt||amt<=0||amt>bal){ sendChat(`@${d}, укажи ставку. Баланс: ${bal}`); return; }
+    const syms=['🍒','🍋','🍇','⭐','💎','7️⃣'];
+    const roll=[0,0,0].map(()=>syms[Math.floor(Math.random()*syms.length)]);
+    let mult=0;
+    if(roll[0]===roll[1]&&roll[1]===roll[2]) mult=roll[0]==='7️⃣'?10:roll[0]==='💎'?6:3;
+    else if(roll[0]===roll[1]||roll[1]===roll[2]||roll[0]===roll[2]) mult=1.5;
+    const delta=Math.round(amt*mult)-amt;
+    Economy.add(u,delta);
+    const cfg=BuiltinConfig.get('слоты');
+    const cur=Economy.settings().name;
+    const resultText=delta>=0?`выиграл(а) ${delta}`:`проиграл(а) ${Math.abs(delta)}`;
+    const tpl=cfg.response||'🎰 [ {roll} ] @{user} {result} {currency}. Баланс: {balance}';
+    sendChat(tpl.replace(/\{roll\}/g,roll.join(' | ')).replace(/\{user\}/g,d).replace(/\{result\}/g,resultText).replace(/\{currency\}/g,cur).replace(/\{balance\}/g,Economy.get(u)));
+    renderEconomyPanel();
+  },
+  'рулетка':(u,d)=>{
+    const n=Math.floor(Math.random()*101);
+    const emojis=['🎯','💥','🌀','🔥','⚡'];
+    const emoji=emojis[Math.floor(Math.random()*emojis.length)];
+    const cfg=BuiltinConfig.get('рулетка');
+    const tpl=cfg.response||'{emoji} @{user} выбивает {n} из 100!';
+    sendChat(tpl.replace(/\{user\}/g,d).replace(/\{n\}/g,n).replace(/\{emoji\}/g,emoji));
+  },
+  'кубик':(u,d,args)=>{
+    const sides=parseInt(args[0],10)||6;
+    const result=Math.floor(Math.random()*sides)+1;
+    const cfg=BuiltinConfig.get('кубик');
+    const tpl=cfg.response||'🎲 @{user} бросает d{sides} → {result}';
+    sendChat(tpl.replace(/\{user\}/g,d).replace(/\{sides\}/g,sides).replace(/\{result\}/g,result));
+  },
+  'шар':(u,d,args)=>{
+    if(!args.length){ sendChat(`@${d}, задай вопрос: !шар твой вопрос`); return; }
+    const cfg=BuiltinConfig.get('шар');
+    const pool=(cfg.answers&&cfg.answers.length)?cfg.answers:EIGHTBALL;
+    const ans=pool[Math.floor(Math.random()*pool.length)];
+    sendChat(`@${d}: ${ans}`);
+  },
+  /* Игры */
+  'анаграмма':()=>Games.startAnagram(),
+  'угадай':(u,d,args)=>Games.checkAnagramGuess(u,d,args.join(' ')),
+  'математика':()=>Games.startMath(),
+  'голос':(u,d,args)=>{
+    const i=parseInt(args[0],10)-1;
+    if(isNaN(i)||i<0||i>4){ return; }
+    if(Games.poll&&Games.poll.options[i]){
+      Games.poll.votes[u]=i; renderPoll();
+    }
+  },
+  /* Инфо */
+  'аптайм':async(u,d)=>{
+    const info=await fetchStreamInfo();
+    if(!info){ sendChat('Стрим сейчас оффлайн.'); return; }
+    const mins=Math.floor((Date.now()-new Date(info.started_at).getTime())/60000);
+    const h=Math.floor(mins/60), m=mins%60;
+    const cfg=BuiltinConfig.get('аптайм');
+    const tpl=cfg.response||'⏱ @{user}, стрим идёт {h}ч {m}м';
+    sendChat(tpl.replace(/\{user\}/g,d).replace(/\{h\}/g,h).replace(/\{m\}/g,m));
+  },
+  'эло':async(u,d)=>{
+    const fc=FaceitConfig.get();
+    if(!fc.apiKey){ sendChat(`@${d}, для !эло нужно указать Faceit API-ключ в панели «Настройки».`); return; }
+    try{
+      const s=await fetchFaceitSummary(fc.nickname||'ddrt',fc.playerId||'',fc.steamId||'');
+      const cfg=BuiltinConfig.get('эло');
+      const tpl=cfg.response||'🎮 {nickname} — ELO: {elo} · Сегодня: {wins}W / {losses}L';
+      sendChat(tpl.replace(/\{nickname\}/g,s.nickname).replace(/\{elo\}/g,s.elo!=null?s.elo:'—').replace(/\{wins\}/g,s.wins).replace(/\{losses\}/g,s.losses).replace(/\{statsLink\}/g,s.statsLink));
+    }catch(e){
+      console.error('[!эло] Faceit error:',e&&e.message,e);
+      sendChat(`@${d}, не удалось получить данные с Faceit (${faceitErrorMessage(e)}).`);
+    }
+  },
+  '67':(u,d)=>{
+    const ok=Math.random()<0.5;
+    const cfg=BuiltinConfig.get('67');
+    const tpl=cfg.response||'{emoji} @{user} {result}';
+    const result=ok?'сделал 67! 🔥':'не смог сделать сиксевен... 💀';
+    const emoji=ok?'6️⃣7️⃣':'😔';
+    sendChat(tpl.replace(/\{user\}/g,d).replace(/\{result\}/g,result).replace(/\{emoji\}/g,emoji));
+  },
+  'температура':(u,d,args)=>{
+    const target=(args[0]||'').replace('@','')||d;
+    const temp=(Math.random()*(42-34)+34).toFixed(1);
+    const t=parseFloat(temp);
+    let label;
+    if(t<35.5) label='🥶 переохлаждение, срочно к врачу';
+    else if(t<36.5) label='😐 слегка ниже нормы';
+    else if(t<=37.2) label='✅ норма';
+    else if(t<=38.5) label='🤒 небольшая температура';
+    else if(t<=40) label='🔥 жар, вызывай скорую';
+    else label='💀 как ты вообще жив(а)?';
+    const cfg=BuiltinConfig.get('температура');
+    const tpl=cfg.response||'🌡️ @{user}: {temp}°C — {label}';
+    sendChat(tpl.replace(/\{user\}/g,target).replace(/\{temp\}/g,temp).replace(/\{label\}/g,label));
+  },
+  'писька':(u,d,args)=>{
+    const target=(args[0]||'').replace('@','')||d;
+    const size=Math.floor(Math.random()*21); // 0-20 см
+    const bar='8'+'='.repeat(size)+'D';
+    const cfg=BuiltinConfig.get('писька');
+    const tpl=cfg.response||'🍆 @{user}: {size} см {bar}';
+    sendChat(tpl.replace(/\{user\}/g,target).replace(/\{size\}/g,size).replace(/\{bar\}/g,bar));
+  },
+  'команды':(u,d)=>{
+    const custom=Commands.list().filter(c=>c.enabled!==false).slice(0,6).map(c=>Commands.settings().prefix+c.name);
+    const builtin=['!очки','!топ','!ежедневка','!работа','!лут','!дать','!ставка','!слоты','!украсть','!дуэль','!рулетка','!кубик','!шар','!вайб','!айкью','!размер','!пара','!оценка','!роаст','!комплимент','!монетка','!футболка','!кс','!эло','!67','!температура','!писька','!предсказание','!погода','!погладить','!бонк','!шлепок','!аптайм'];
+    const all=[...builtin,...custom];
+    const list=all.join(' ')+(Commands.list().length>8?' и другие…':'');
+    const cfg=BuiltinConfig.get('команды');
+    const tpl=cfg.response||'📋 Команды: {list}';
+    sendChat(tpl.replace(/\{list\}/g,list));
+  },
+  /* Управление стримом */
+  'название':async(u,d,args)=>{
+    await changeTitle(args.join(' ').trim(),true,d);
+  },
+  'категория':async(u,d,args)=>{
+    await changeCategory(args.join(' ').trim(),true,d);
+  },
+  'игра':async(u,d,args,badges)=>BUILTIN_COMMANDS['категория'](u,d,args,badges),
+
+  /* ══ ЭКОНОМИКА+ ══ */
+  'ежедневка':(u,d)=>{
+    const key='daily_'+u; const last=load(key,0);
+    const ms=Date.now()-last; const h24=86400000;
+    if(ms<h24){
+      const left=Math.ceil((h24-ms)/3600000);
+      sendChat(`@${d}, ежедневный бонус уже получен! Ещё через ${left}ч ⏳`); return;
+    }
+    const amt=50+Math.floor(Math.random()*151); // 50-200
+    Economy.add(u,amt); save(key,Date.now());
+    const cfg=BuiltinConfig.get('ежедневка');
+    const tpl=cfg.response||'📅 @{user}, ты получил ежедневный бонус: +{amt} {currency}! Следующий — через 24ч 🎁';
+    sendChat(tpl.replace(/\{user\}/g,d).replace(/\{amt\}/g,amt).replace(/\{currency\}/g,Economy.settings().name));
+    renderEconomyPanel();
+  },
+  'работа':(u,d)=>{
+    const key='work_cd_'+u; const last=load(key,0);
+    const cd=30*60*1000; // 30 минут кулдаун
+    if(Date.now()-last<cd){
+      const leftMin=Math.ceil((cd-(Date.now()-last))/60000);
+      sendChat(`@${d}, ты устал(а)! Отдохни ещё ${leftMin} мин 😴`); return;
+    }
+    const jobs=['программировал(а)','стримил(а)','рисовал(а) арт','доставлял(а) пиццу','разгружал(а) склад','чинил(а) баги','писал(а) код','играл(а) в игры','снимал(а) клипы','делал(а) монтаж'];
+    const job=jobs[Math.floor(Math.random()*jobs.length)];
+    const amt=10+Math.floor(Math.random()*91); // 10-100
+    const tiredList=['немного','порядком','сильно','до полусмерти','с полной отдачей'];
+    const tiredness=tiredList[Math.floor(Math.random()*tiredList.length)];
+    Economy.add(u,amt); save(key,Date.now());
+    const cfg=BuiltinConfig.get('работа');
+    const tpl=cfg.response||'💼 @{user} поработал(а) и заработал(а) {amt} {currency}! Усталость: {tiredness}';
+    sendChat(tpl.replace(/\{user\}/g,d).replace(/\{amt\}/g,amt).replace(/\{currency\}/g,Economy.settings().name).replace(/\{tiredness\}/g,tiredness).replace(/\{job\}/g,job));
+    renderEconomyPanel();
+  },
+  'украсть':(u,d,args)=>{
+    const target=(args[0]||'').replace('@','').toLowerCase();
+    if(!target||target===u){ sendChat(`@${d}, укажи жертву: !украсть @ник`); return; }
+    const tBal=Economy.get(target);
+    if(tBal<10){ sendChat(`@${d}, у @${target} почти ничего нет — не стоит 🤷`); return; }
+    const uBal=Economy.get(u);
+    if(uBal<20){ sendChat(`@${d}, у тебя должно быть хотя бы 20 очков чтобы рискнуть`); return; }
+    const success=Math.random()<0.4;
+    const stolen=Math.floor(tBal*0.1)+Math.floor(Math.random()*Math.floor(tBal*0.15))+1;
+    const cur=Economy.settings().name;
+    if(success){
+      Economy.add(u,stolen); Economy.add(target,-stolen);
+      sendChat(`🦊 @${d} тихонько стащил(а) ${stolen} ${cur} у @${target}! Осталось у жертвы: ${Economy.get(target)} 😤`);
+    } else {
+      const fine=Math.floor(uBal*0.15)+1;
+      Economy.add(u,-fine);
+      sendChat(`🚨 @${d} попался(ась) при краже у @${target} и заплатил(а) штраф ${fine} ${cur}! Баланс: ${Economy.get(u)}`);
+    }
+    renderEconomyPanel();
+  },
+  'дуэль':(u,d,args)=>{
+    const target=(args[0]||'').replace('@','').toLowerCase();
+    const amt=parseInt(args[1],10)||50;
+    if(!target||target===u){ sendChat(`@${d}, укажи соперника: !дуэль @ник ставка`); return; }
+    if(Economy.get(u)<amt){ sendChat(`@${d}, недостаточно очков для ставки ${amt}.`); return; }
+    // Добавляем в список ожидающих дуэлей
+    if(!Games.duels) Games.duels={};
+    if(Games.duels[target]){ sendChat(`@${d}, у @${target} уже есть активный вызов!`); return; }
+    Games.duels[target]={challenger:u,challengerName:d,amount:amt,ts:Date.now()};
+    sendChat(`⚔️ @${d} вызывает @${target} на дуэль — ставка ${amt} ${Economy.settings().name}! Напиши !принять или !отклонить в течение 60 секунд.`);
+    setTimeout(()=>{ if(Games.duels&&Games.duels[target]&&Games.duels[target].challenger===u){ delete Games.duels[target]; sendChat(`⏰ Дуэль @${d} vs @${target} истекла — @${target} не ответил(а).`); } },60000);
+  },
+  'принять':(u,d)=>{
+    if(!Games.duels) Games.duels={};
+    const duel=Games.duels[u];
+    if(!duel){ sendChat(`@${d}, тебя никто не вызывал на дуэль!`); return; }
+    if(Economy.get(u)<duel.amount){ sendChat(`@${d}, недостаточно очков для принятия ставки!`); delete Games.duels[u]; return; }
+    const win=Math.random()<0.5;
+    const cur=Economy.settings().name;
+    delete Games.duels[u];
+    if(win){
+      Economy.add(u,duel.amount); Economy.add(duel.challenger,-duel.amount);
+      sendChat(`⚔️ ДУЭЛЬ! @${d} побеждает @${duel.challengerName}! +${duel.amount} ${cur} 🏆 (баланс: ${Economy.get(u)})`);
+    }else{
+      Economy.add(duel.challenger,duel.amount); Economy.add(u,-duel.amount);
+      sendChat(`⚔️ ДУЭЛЬ! @${duel.challengerName} побеждает @${d}! +${duel.amount} ${cur} 🏆 (баланс @${d}: ${Economy.get(u)})`);
+    }
+    renderEconomyPanel();
+  },
+  'отклонить':(u,d)=>{
+    if(!Games.duels) Games.duels={};
+    const duel=Games.duels[u];
+    if(!duel){ return; }
+    delete Games.duels[u];
+    sendChat(`🏳️ @${d} отклонил(а) вызов @${duel.challengerName}. Трус! 🐔`);
+  },
+
+  /* ══ ВАЙ-КОМАНДЫ ══ */
+  'лут':(u,d)=>{
+    const key='loot_cd_'+u; const last=load(key,0);
+    const cd=5*60*1000;
+    if(Date.now()-last<cd){ const l=Math.ceil((cd-(Date.now()-last))/60000); sendChat(`@${d}, ты уже лутился(ась)! Ещё ${l} мин 🎒`); return; }
+    const rarities=[
+      {name:'Обычный',  emoji:'⚪',weight:40,min:5,  max:25},
+      {name:'Необычный',emoji:'🟢',weight:30,min:20, max:60},
+      {name:'Редкий',   emoji:'🔵',weight:18,min:50, max:120},
+      {name:'Эпический',emoji:'🟣',weight:9, min:100,max:250},
+      {name:'ЛЕГЕНД',   emoji:'🟡',weight:3, min:300,max:700},
+    ];
+    const roll=Math.random()*100; let acc=0, rarity=rarities[0];
+    for(const r of rarities){ acc+=r.weight; if(roll<acc){rarity=r;break;} }
+    const items=['меч','посох','шлем','броню','зелье','свиток','руну','артефакт','кристалл','ключ','карту','монеты'];
+    const item=items[Math.floor(Math.random()*items.length)];
+    const amt=rarity.min+Math.floor(Math.random()*(rarity.max-rarity.min+1));
+    Economy.add(u,amt); save(key,Date.now());
+    sendChat(`${rarity.emoji} [${rarity.name}] @${d} нашёл(а) «${item}»! +${amt} ${Economy.settings().name} 🎒 Баланс: ${Economy.get(u)}`);
+    renderEconomyPanel();
+  },
+  'монетка':(u,d,args)=>{
+    const guess=(args[0]||'').toLowerCase();
+    const result=Math.random()<0.5?'орёл':'решка';
+    const cfg=BuiltinConfig.get('монетка');
+    const tpl=cfg.response||'🪙 @{user} подбрасывает монету... {result}!';
+    let msg=tpl.replace(/\{user\}/g,d).replace(/\{result\}/g,result);
+    if(guess==='орёл'||guess==='решка'){
+      msg+= guess===result?' — угадал(а)! ✅':' — мимо! ❌';
+    }
+    sendChat(msg);
+  },
+  'футболка':(u,d)=>{
+    const result=Math.random()<0.5?'снимает футболку 🔥':'надевает футболку обратно 😅';
+    const cfg=BuiltinConfig.get('футболка');
+    const tpl=cfg.response||'👕 @{user} {result}';
+    sendChat(tpl.replace(/\{user\}/g,d).replace(/\{result\}/g,result));
+  },
+  'кс':(u,d)=>{
+    const outcomes=[
+      {win:true, side:'КТ', emoji:'🛡️'},
+      {win:true, side:'ТТ', emoji:'💣'},
+      {win:false,side:'ТТ', emoji:'💣'},
+      {win:false,side:'КТ', emoji:'🛡️'},
+    ];
+    const o=outcomes[Math.floor(Math.random()*outcomes.length)];
+    const resultText=(o.win?'победил(а) за ':'проиграл(а) за ')+o.side;
+    const cfg=BuiltinConfig.get('кс');
+    const tpl=cfg.response||'{emoji} @{user} {result}!';
+    sendChat(tpl.replace(/\{user\}/g,d).replace(/\{result\}/g,resultText).replace(/\{emoji\}/g,o.emoji));
+  },
+  'вайб':(u,d)=>{
+    const vibes=[
+      {pct:100,label:'УЛЬТРА ВАЙБ 🔥🔥🔥',bar:'██████████'},
+      {pct:90, label:'Горячий вайб 🔥',    bar:'█████████░'},
+      {pct:75, label:'Хороший вайб ✨',     bar:'███████░░░'},
+      {pct:60, label:'Норм вайб 😌',        bar:'██████░░░░'},
+      {pct:40, label:'Слабый вайб 😐',      bar:'████░░░░░░'},
+      {pct:20, label:'Грустный вайб 😞',    bar:'██░░░░░░░░'},
+      {pct:5,  label:'NO VIBE 💀',          bar:'█░░░░░░░░░'},
+    ];
+    const roll=Math.random()*100;
+    const vibe=vibes.find(v=>roll>=v.pct-v.pct/2)||vibes[Math.floor(Math.random()*vibes.length)];
+    const v=vibes[Math.floor(Math.random()*vibes.length)];
+    sendChat(`🌊 VIBE CHECK @${d}: ${v.bar} ${v.pct}% — ${v.label}`);
+  },
+  'айкью':(u,d,args)=>{
+    const target=(args[0]||'').replace('@','')||d;
+    const seed=target.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+    const iq=((seed*137+42)%161)+40; // детерминированный IQ 40-200
+    const labels=[
+      [40,69,'🥴 Ой...'],
+      [70,84,'😐 Среднячок'],
+      [85,99,'🙂 Норм'],
+      [100,114,'😎 Умный'],
+      [115,129,'🧠 Умница'],
+      [130,149,'🤓 Гений'],
+      [150,200,'👽 Инопланетный разум'],
+    ];
+    const label=(labels.find(([lo,hi])=>iq>=lo&&iq<=hi)||labels[0])[2];
+    const cfg=BuiltinConfig.get('айкью');
+    const tpl=cfg.response||'🧠 IQ @{user}: {iq} — {label}';
+    sendChat(tpl.replace(/\{user\}/g,target).replace(/\{iq\}/g,iq).replace(/\{label\}/g,label));
+  },
+  'размер':(u,d,args)=>{
+    const target=(args[0]||'').replace('@','')||d;
+    const seed=target.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+    const size=(seed*31+7)%21; // 0-20
+    const bar='8'+'='.repeat(size)+'D';
+    sendChat(`📏 @${target}: ${bar} (${size} см)`);
+  },
+  'пара':(u,d,args)=>{
+    if(args.length<2){ sendChat(`@${d}, укажи два имени: !пара имя1 имя2`); return; }
+    const a=args[0].replace('@',''), b=args[1].replace('@','');
+    const combined=(a+b).toLowerCase();
+    const pct=((combined.split('').reduce((acc,c)=>acc+c.charCodeAt(0),0))%101);
+    const bars='█'.repeat(Math.round(pct/10))+'░'.repeat(10-Math.round(pct/10));
+    const cfg=BuiltinConfig.get('пара');
+    const tpl=cfg.response||'💕 {a} ❤️ {b}: {pct}% {bar}';
+    sendChat(tpl.replace(/\{a\}/g,a).replace(/\{b\}/g,b).replace(/\{pct\}/g,pct).replace(/\{bar\}/g,bars));
+  },
+  'оценка':(u,d,args)=>{
+    if(!args.length){ sendChat(`@${d}, что оценить? Пример: !оценка кот`); return; }
+    const thing=args.join(' ');
+    const seed=thing.toLowerCase().split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+    const score=(seed*17+3)%11; // детерминированный 0-10
+    const stars='⭐'.repeat(Math.round(score/2))+'☆'.repeat(5-Math.round(score/2));
+    const cfg=BuiltinConfig.get('оценка');
+    const tpl=cfg.response||'📊 @{user} оценивает «{thing}»: {score}/10 {stars}';
+    sendChat(tpl.replace(/\{user\}/g,d).replace(/\{thing\}/g,thing).replace(/\{score\}/g,score).replace(/\{stars\}/g,stars));
+  },
+  'роаст':(u,d,args)=>{
+    const target=(args[0]||'').replace('@','')||d;
+    const roasts=[
+      `@${target}, ты такой медленный — черепаха обогнала бы тебя в слоу-мо 🐢`,
+      `@${target} открывает рот и все сразу хотят тишины 🤫`,
+      `@${target}, твой интернет медленнее, чем ты думаешь 💀`,
+      `@${target} — живое доказательство что кофе не помогает всем 😅`,
+      `@${target}, ты так редко выигрываешь, что победа в лотерею тебя удивит 🎟️`,
+      `@${target}, твои скиллы в игре — это произведение искусства. Абстрактного 🎨`,
+      `@${target} такой токсичный, что его/её чат-лог внесён в Красную книгу`,
+      `@${target}, ты нажимаешь F5 так быстро, что запоздаешь с рефлексами 😂`,
+    ];
+    sendChat(roasts[Math.floor(Math.random()*roasts.length)]+' (это шутка, мы любим тебя ❤️)');
+  },
+  'комплимент':(u,d,args)=>{
+    const target=(args[0]||'').replace('@','')||d;
+    const comps=[
+      `@${target} — абсолютный красавчик/красавица этого чата 💜`,
+      `@${target}, ты делаешь этот чат лучше просто своим присутствием ✨`,
+      `@${target} умный(ая) и талантливый(ая), это видно сразу 🧠💫`,
+      `@${target}, твой вайб сегодня на максималках 🔥`,
+      `@${target} — настоящий герой чата, не могу не отметить 🏆`,
+      `@${target}, ты всегда знаешь что написать в нужный момент 💬💜`,
+      `@${target} — пример для всех зрителей. Топовый человек! ⭐`,
+      `@${target}, с таким чатером как ты стрим всегда лучше 🎮`,
+    ];
+    sendChat(comps[Math.floor(Math.random()*comps.length)]);
+  },
+  'погладить':(u,d,args)=>{
+    const target=(args[0]||'').replace('@','');
+    if(!target){ sendChat(`@${d}, кого гладить? !погладить @ник`); return; }
+    const cfg=BuiltinConfig.get('погладить');
+    const tpl=cfg.response||'( ˘ω˘ ) @{from} гладит @{to} по голове... peepoLove';
+    sendChat(tpl.replace(/\{from\}/g,d).replace(/\{to\}/g,target));
+  },
+  'бонк':(u,d,args)=>{
+    const target=(args[0]||'').replace('@','');
+    if(!target){ sendChat(`@${d}, кого бонкать? !бонк @ник`); return; }
+    const cfg=BuiltinConfig.get('бонк');
+    const tpl=cfg.response||'🔨 BONK! @{from} бьёт @{to} молотком в голову';
+    sendChat(tpl.replace(/\{from\}/g,d).replace(/\{to\}/g,target));
+  },
+  'шлепок':(u,d,args)=>{
+    const target=(args[0]||'').replace('@','');
+    if(!target){ sendChat(`@${d}, кого шлёпнуть? !шлепок @ник`); return; }
+    const cfg=BuiltinConfig.get('шлепок');
+    const tpl=cfg.response||'👋 @{from} отвешивает оплеуху @{to}!';
+    sendChat(tpl.replace(/\{from\}/g,d).replace(/\{to\}/g,target));
+  },
+  'поцелуй':(u,d,args)=>{
+    const target=(args[0]||'').replace('@','');
+    if(!target){ sendChat(`@${d}, кого целовать? !поцелуй @ник`); return; }
+    const cfg=BuiltinConfig.get('поцелуй');
+    const tpl=cfg.response||'💋 @{from} целует @{to} 🌹';
+    sendChat(tpl.replace(/\{from\}/g,d).replace(/\{to\}/g,target));
+  },
+  'укус':(u,d,args)=>{
+    const target=(args[0]||'').replace('@','');
+    if(!target){ sendChat(`@${d}, кого кусать? !укус @ник`); return; }
+    const cfg=BuiltinConfig.get('укус');
+    const tpl=cfg.response||'🦷 @{from} кусает @{to}! ОУЧ';
+    sendChat(tpl.replace(/\{from\}/g,d).replace(/\{to\}/g,target));
+  },
+  'рандом':(u,d,args)=>{
+    const max=parseInt(args[0],10)||100;
+    const result=Math.floor(Math.random()*max)+1;
+    const cfg=BuiltinConfig.get('рандом');
+    const tpl=cfg.response||'🎲 @{user} выбирает: {result} (из {max})';
+    sendChat(tpl.replace(/\{user\}/g,d).replace(/\{result\}/g,result).replace(/\{max\}/g,max));
+  },
+  'погода':(u,d)=>{
+    const cities=['на Twitch','в чате','на стриме','в душе стримера','в голове чатеров'];
+    const city=cities[Math.floor(Math.random()*cities.length)];
+    const weathers=[
+      `☀️ Ясно, +${20+Math.floor(Math.random()*15)}°C — идеально для стрима!`,
+      `🌧️ Дождь и ${5+Math.floor(Math.random()*10)}°C — прямо как после рейда`,
+      `⛈️ Гроза! ${Math.floor(Math.random()*30)}°C — токсики бушуют`,
+      `❄️ Снегопад, -${Math.floor(Math.random()*15)}°C — чат замёрз`,
+      `🌫️ Туман ${Math.floor(Math.random()*20)}°C — непонятно что происходит`,
+      `🌈 Радуга после дождя! ${15+Math.floor(Math.random()*10)}°C — вайбы улучшились`,
+    ];
+    const w=weathers[Math.floor(Math.random()*weathers.length)];
+    sendChat(`🌍 Погода ${city}: ${w}`);
+  },
+  'предсказание':(u,d,args)=>{
+    if(!args.length){ sendChat(`@${d}, о чём предсказание? !предсказание вопрос`); return; }
+    const thing=args.join(' ');
+    const preds=[
+      `🔮 Сегодня это точно случится с @${d}!`,
+      `🔮 Никогда. Абсолютно никогда. Забудь.`,
+      `🔮 Возможно, если пожертвуешь подпиской стримеру...`,
+      `🔮 Туман будущего скрывает ответ. Попробуй ещё раз.`,
+      `🔮 Знаки указывают на — ДА. 100% произойдёт!`,
+      `🔮 Вселенная говорит: не сейчас, но скоро ⭐`,
+      `🔮 Звёзды против этого. Жди лучших времён.`,
+      `🔮 Только если ты сначала напишешь в чат "peepoLove"`,
+    ];
+    sendChat(preds[Math.floor(Math.random()*preds.length)]+` (про: ${thing})`);
+  },
+  'аски':(u,d,args)=>{
+    const text=(args.join(' ')||'CHAT').toUpperCase().slice(0,10);
+    sendChat(`✍️ @${d}: [ ${text.split('').join(' · ')} ]`);
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   MINI-GAMES
+   ══════════════════════════════════════════════════════════════════════ */
+const Games={
+  anagram:null, math:null, poll:null, giveaway:null, duels:{},
+  onMessage(username,displayName,message,badges){
+    const low=message.trim().toLowerCase();
+    // giveaway
+    if(this.giveaway&&this.giveaway.active&&low===this.giveaway.keyword.toLowerCase()){
+      if(!this.giveaway.entries.includes(username)){ this.giveaway.entries.push(username); renderGiveaway(); }
+      return;
+    }
+    // math — принимаем целые числа
+    if(this.math){
+      const n=parseFloat(low);
+      if(!isNaN(n)&&Math.abs(n-this.math.answer)<0.01){
+        const reward=parseInt(document.getElementById('mathReward').value,10)||0;
+        Economy.add(username,reward);
+        sendChat(`✅ @${displayName} решил(а) пример! Ответ: ${this.math.answer}. +${reward} ${Economy.settings().name}`);
+        this.math=null; document.getElementById('mathStatus').textContent='Игра завершена ✅';
+        renderEconomyPanel();
+      }
+    }
+  },
+  startAnagram(){
+    const words=(document.getElementById('anagramWords').value||'').split(',').map(w=>w.trim()).filter(Boolean);
+    if(!words.length){ sendChat('Список слов для анаграмм пуст — настрой в панели «Игры чата».'); return; }
+    const word=words[Math.floor(Math.random()*words.length)];
+    let scrambled=scramble(word);
+    this.anagram={word:word.toLowerCase(),scrambled};
+    const cfg=BuiltinConfig.get('анаграмма');
+    const tpl=cfg.response||'🔤 Анаграмма! Угадай слово: {scrambled} → пишите !угадай слово';
+    sendChat(tpl.replace(/\{scrambled\}/g,scrambled.toUpperCase()));
+    document.getElementById('anagramStatus').textContent=`Идёт игра: ${scrambled.toUpperCase()}`;
+  },
+  checkAnagramGuess(username,displayName,guess){
+    if(!this.anagram||!guess) return;
+    if(guess.trim().toLowerCase()===this.anagram.word){
+      const reward=parseInt(document.getElementById('anagramReward').value,10)||0;
+      Economy.add(username,reward);
+      sendChat(`🎉 @${displayName} угадал(а) «${this.anagram.word}»! +${reward} ${Economy.settings().name}`);
+      this.anagram=null; document.getElementById('anagramStatus').textContent='Игра завершена ✅';
+      renderEconomyPanel();
+    }
+  },
+  startMath(){
+    const max=parseInt(document.getElementById('mathMax').value,10)||20;
+    const a=1+Math.floor(Math.random()*max), b=1+Math.floor(Math.random()*max);
+    const ops=['+','-','*'];
+    const op=ops[Math.floor(Math.random()*ops.length)];
+    let answer;
+    if(op==='+') answer=a+b; else if(op==='-') answer=a-b; else answer=a*b;
+    this.math={a,b,op,answer};
+    const opDisplay=op==='*'?'×':op;
+    const expr=`${a} ${opDisplay} ${b}`;
+    const cfg=BuiltinConfig.get('математика');
+    const tpl=cfg.response||'➗ Реши пример: {expr} = ? (первый правильный ответ в чат)';
+    sendChat(tpl.replace(/\{expr\}/g,expr));
+    document.getElementById('mathStatus').textContent=`Идёт игра: ${expr} = ?`;
+  }
+};
+
+function scramble(word){
+  const arr=word.split(''); let s=word, tries=0;
+  while(s.toLowerCase()===word.toLowerCase()&&tries<20){
+    for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+    s=arr.join(''); tries++;
+  }
+  return s;
+}
+
+function renderPoll(){
+  const box=document.getElementById('pollStatus');
+  if(!Games.poll){ box.innerHTML=''; return; }
+  const p=Games.poll;
+  const counts=p.options.map((_,i)=>Object.values(p.votes).filter(v=>v===i).length);
+  const total=counts.reduce((a,b)=>a+b,0)||1;
+  box.innerHTML=`<div style="font-weight:600;margin-bottom:8px">${escapeHtml(p.question)}</div>`+
+    p.options.map((o,i)=>{
+      const pct=Math.round(counts[i]/total*100);
+      return `<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)"><span>${i+1}. ${escapeHtml(o)}</span><span>${counts[i]} (${pct}%)</span></div>
+      <div style="height:6px;background:var(--panel-3);border-radius:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--violet)"></div></div></div>`;
+    }).join('');
+}
+
+/* ── Звук для рулетки розыгрыша (Web Audio API, без внешних файлов) ── */
+let GA_AudioCtx=null;
+function gaAudio(){
+  if(!GA_AudioCtx){
+    try{ GA_AudioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; }
+  }
+  if(GA_AudioCtx.state==='suspended'){ GA_AudioCtx.resume().catch(()=>{}); }
+  return GA_AudioCtx;
+}
+function gaTranslateX(el){
+  const t=getComputedStyle(el).transform;
+  if(!t||t==='none') return 0;
+  if(typeof DOMMatrixReadOnly!=='undefined'){
+    try{ return new DOMMatrixReadOnly(t).m41; }catch(e){}
+  }
+  const m=t.match(/matrix\(([^)]+)\)/);
+  if(m){ const p=m[1].split(',').map(parseFloat); return p[4]||0; }
+  return 0;
+}
+function playTick(progress){
+  const ctx=gaAudio(); if(!ctx) return;
+  const t=ctx.currentTime;
+  const osc=ctx.createOscillator();
+  const gain=ctx.createGain();
+  osc.type='square';
+  osc.frequency.setValueAtTime(560+progress*160,t);
+  gain.gain.setValueAtTime(0.0001,t);
+  gain.gain.exponentialRampToValueAtTime(0.11,t+0.004);
+  gain.gain.exponentialRampToValueAtTime(0.0001,t+0.06);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(t); osc.stop(t+0.07);
+}
+function playWhoosh(){
+  const ctx=gaAudio(); if(!ctx) return;
+  const t=ctx.currentTime;
+  const dur=0.4, size=Math.floor(ctx.sampleRate*dur);
+  const buf=ctx.createBuffer(1,size,ctx.sampleRate);
+  const data=buf.getChannelData(0);
+  for(let i=0;i<size;i++) data[i]=(Math.random()*2-1)*(1-i/size);
+  const noise=ctx.createBufferSource(); noise.buffer=buf;
+  const filt=ctx.createBiquadFilter(); filt.type='bandpass';
+  filt.frequency.setValueAtTime(500,t);
+  filt.frequency.exponentialRampToValueAtTime(1800,t+dur);
+  const gain=ctx.createGain();
+  gain.gain.setValueAtTime(0.0001,t);
+  gain.gain.exponentialRampToValueAtTime(0.14,t+0.05);
+  gain.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  noise.connect(filt).connect(gain).connect(ctx.destination);
+  noise.start(t); noise.stop(t+dur);
+}
+function playWinChime(){
+  const ctx=gaAudio(); if(!ctx) return;
+  [523.25,659.25,783.99,1046.5].forEach((freq,i)=>{
+    const t=ctx.currentTime+i*0.09;
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    osc.type='triangle';
+    osc.frequency.setValueAtTime(freq,t);
+    gain.gain.setValueAtTime(0.0001,t);
+    gain.gain.exponentialRampToValueAtTime(0.18,t+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001,t+0.55);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t); osc.stop(t+0.6);
+  });
+}
+function startTickLoop(track,box,ITEM_W,duration){
+  let lastIndex=null;
+  const startT=performance.now();
+  function frame(){
+    const now=performance.now();
+    const elapsed=now-startT;
+    const tx=gaTranslateX(track);
+    const idx=Math.round((box.clientWidth/2-tx)/ITEM_W-0.5);
+    if(idx!==lastIndex){ lastIndex=idx; playTick(Math.min(1,elapsed/duration)); }
+    if(elapsed<duration+80) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function renderGiveaway(){
+  const box=document.getElementById('giveawayStatus');
+  if(!Games.giveaway){ box.innerHTML=''; return; }
+  const g=Games.giveaway;
+  box.innerHTML=`<div style="font-size:13px">Ключ: <b class="mono">${escapeHtml(g.keyword)}</b> · Участников: <b>${g.entries.length}</b>`+
+    (g.winner?` · Победитель: <b style="color:var(--cyan)">${escapeHtml(g.winner)}</b>`:'')+`</div>`;
+}
+
+/* Рулетка выбора победителя — крутится как открытие кейса в CS:GO */
+const RouletteState={spinning:false};
+async function spinGiveawayRoulette(){
+  if(RouletteState.spinning) return;
+  if(!Games.giveaway||!Games.giveaway.entries.length){ toast('Нет участников','err'); return; }
+  const entries=Games.giveaway.entries;
+  const winner=entries[Math.floor(Math.random()*entries.length)];
+
+  const box=document.getElementById('giveawayRoulette');
+  const track=document.getElementById('giveawayTrack');
+  const pickBtn=document.getElementById('giveawayPick');
+  const startBtn=document.getElementById('giveawayStart');
+  const stopBtn=document.getElementById('giveawayStop');
+
+  RouletteState.spinning=true;
+  pickBtn.disabled=true; startBtn.disabled=true; stopBtn.disabled=true;
+  pickBtn.textContent='🎲 Загружаем...';
+  gaAudio(); // "разблокируем" звук прямо в обработчике клика (требование браузеров)
+
+  const ITEM_W=108; // 96px item + 6px*2 margin
+  const COUNT=56;
+  const WIN_INDEX=COUNT-8; // победитель ближе к концу ленты, но не в самом конце
+
+  // Собираем список ников для ленты и подтягиваем их аватарки Twitch
+  const strip=[];
+  for(let i=0;i<COUNT;i++){
+    strip.push(i===WIN_INDEX?winner:entries[Math.floor(Math.random()*entries.length)]);
+  }
+  try{ await fetchAvatars(strip); }catch(e){}
+
+  let html='';
+  strip.forEach((name,i)=>{
+    const isWin=i===WIN_INDEX;
+    html+=`<div class="roulette-item" data-win="${isWin?'1':'0'}">`+
+      `<img class="av" src="${getAvatar(name)}" alt="" loading="eager"><span class="nm">${escapeHtml(name)}</span></div>`;
+  });
+  track.innerHTML=html;
+  track.classList.remove('spinning');
+  track.style.transition='none';
+  track.style.transform='translateX(0px)';
+  box.classList.remove('hidden');
+  // форсируем перерасчёт стилей перед запуском анимации
+  void track.offsetWidth;
+
+  const boxWidth=box.clientWidth||460;
+  const targetCenter=WIN_INDEX*ITEM_W+ITEM_W/2;
+  const jitter=(Math.random()*30-15); // небольшой разброс, чтобы не всегда точно по центру
+  const finalX=boxWidth/2-targetCenter+jitter;
+
+  pickBtn.textContent='🎲 Крутим...';
+  playWhoosh();
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      track.style.transition=''; // снимаем инлайн-запрет, дальше работает transition из .spinning
+      track.classList.add('spinning');
+      track.style.transform=`translateX(${finalX}px)`;
+      startTickLoop(track,box,ITEM_W,5400);
+    });
+  });
+
+  setTimeout(()=>{
+    Games.giveaway.winner=winner;
+    sendChat(`🎉 Победитель розыгрыша: @${winner} — поздравляем! 🎊`);
+    renderGiveaway();
+    const winnerEl=track.querySelector('[data-win="1"]');
+    if(winnerEl){
+      winnerEl.classList.add('winner-item','settled');
+      playWinChime();
+      if(typeof window.burstGiveawayConfetti==='function'){
+        try{ window.burstGiveawayConfetti(winnerEl); }catch(e){}
+      }
+    }
+    RouletteState.spinning=false;
+    pickBtn.disabled=false; startBtn.disabled=false; stopBtn.disabled=false;
+    pickBtn.textContent='🎲 Выбрать победителя';
+  },5500);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   TIMERS
+   ══════════════════════════════════════════════════════════════════════ */
+const Timers={
+  list(){ return load('timer_list',[]); },
+  saveList(l){ save('timer_list',l); },
+  handles:{},
+  startAll(){
+    Object.values(this.handles).forEach(h=>clearInterval(h));
+    this.handles={};
+    this.list().forEach(t=>{
+      if(!t.enabled) return;
+      this.handles[t.id]=setInterval(()=>{
+        if(IRC.activity.filter(ts=>Date.now()-ts<5*60*1000).length===0) return;
+        sendChat(t.message);
+      },Math.max(30,t.interval)*1000);
+    });
+  }
+};
+
+/* ══════════════════════════════════════════════════════════════════════
+   RENDER
+   ══════════════════════════════════════════════════════════════════════ */
+function updateOverviewStats(){
+  document.getElementById('stMsgs').textContent=IRC.msgCount;
+  document.getElementById('stUsers').textContent=IRC.uniqueUsers.size;
+}
+
+function setLive(isLive,info){
+  document.getElementById('liveDot').classList.toggle('on',isLive);
+  document.getElementById('liveLabel').textContent=isLive?'В эфире':'Оффлайн';
+  document.getElementById('stOnline').innerHTML=isLive?'🔴 <span style="font-size:13px">LIVE</span>':'⚪ <span style="font-size:13px">Оффлайн</span>';
+  if(isLive&&info){
+    const mins=Math.floor((Date.now()-new Date(info.started_at).getTime())/60000);
+    document.getElementById('stUptime').textContent=`${Math.floor(mins/60)}ч ${mins%60}м`;
+    document.getElementById('streamInfoBox').innerHTML=`
+      <div style="font-size:13px;margin-bottom:6px"><b style="color:var(--text)">${escapeHtml(info.title||'')}</b></div>
+      <div style="color:var(--muted);font-size:13px">Категория: ${escapeHtml(info.game_name||'—')}</div>
+      <div style="color:var(--muted);font-size:13px">Зрителей: ${info.viewer_count}</div>`;
+    const ti=document.getElementById('quickTitle');
+    if(ti&&!ti.dataset.edited) ti.placeholder=info.title||'Введите новое название';
+    const ci=document.getElementById('quickCategory');
+    if(ci&&!ci.dataset.edited) ci.placeholder=info.game_name||'Введите категорию';
+  }else{
+    document.getElementById('stUptime').textContent='—';
+    document.getElementById('streamInfoBox').innerHTML='<div class="empty">Стрим сейчас оффлайн</div>';
+  }
+}
+
+function renderOverviewTop(){
+  const box=document.getElementById('overviewTop');
+  const top=Economy.top(5);
+  if(!top.length){ box.innerHTML='<div class="empty">Пока нет данных</div>'; return; }
+  box.innerHTML=top.map((r,i)=>`<div class="lb-row"><div class="lb-rank">${i+1}</div><div class="lb-name">${escapeHtml(r.name)}</div><div class="lb-pts">${r.pts}</div></div>`).join('');
+}
+
+function renderEconomyPanel(){
+  const s=Economy.settings();
+  document.getElementById('ecoName').value=s.name;
+  document.getElementById('ecoRate').value=s.rate;
+  document.getElementById('ecoMsgBonus').value=s.msgBonus;
+  const box=document.getElementById('ecoLeaderboard');
+  const top=Economy.top(15);
+  if(!top.length){ box.innerHTML='<div class="empty">Пока нет данных</div>'; return; }
+  box.innerHTML=top.map((r,i)=>`<div class="lb-row"><div class="lb-rank">${i+1}</div><div class="lb-name">${escapeHtml(r.name)}</div><div class="lb-pts">${r.pts}</div></div>`).join('');
+  renderOverviewTop();
+}
+
+function renderCommandsPanel(){
+  const s=Commands.settings();
+  document.getElementById('cmdPrefix').value=s.prefix;
+  document.getElementById('cmdGlobalCd').value=s.globalCooldown;
+  const box=document.getElementById('cmdList');
+  const list=Commands.list();
+  if(!list.length){ box.innerHTML='<div class="empty">Команд пока нет — нажми «+ Новая команда»</div>'; }
+  else box.innerHTML=list.map((c,i)=>`
+    <div class="list-item">
+      <div>
+        <div class="lname">${escapeHtml(s.prefix)}${escapeHtml(c.name)}
+          <span class="tag" style="margin-left:6px">${c.permission==='mod'?'мод':c.permission==='sub'?'саб':'все'}</span>
+          ${c.enabled===false?'<span class="tag">выкл</span>':''}
+        </div>
+        <div class="ldesc">${escapeHtml(c.response)}</div>
+      </div>
+      <div class="lmeta">
+        <span class="tag">${c.uses||0} исп.</span>
+        <button class="btn sm" onclick="editCommand(${i})">✎</button>
+        <button class="btn sm danger" onclick="deleteCommand(${i})">✕</button>
+      </div>
+    </div>`).join('');
+  renderBuiltinCmdsPanel();
+}
+window.editCommand=function(i){ const list=Commands.list(); openCommandModal(list[i],(u)=>{ list[i]=u; Commands.saveList(list); renderCommandsPanel(); }); };
+window.deleteCommand=function(i){ const list=Commands.list(); list.splice(i,1); Commands.saveList(list); renderCommandsPanel(); };
+
+/* ── Built-in commands panel ── */
+const PERM_LABEL={everyone:'все',sub:'сабы',mod:'моды'};
+function renderBuiltinCmdsPanel(){
+  const box=document.getElementById('builtinCmdList');
+  if(!box) return;
+  const cfg=BuiltinConfig.getAll();
+  // Group by category
+  const groups={};
+  BUILTIN_META.forEach(m=>{
+    if(!groups[m.group]) groups[m.group]=[];
+    groups[m.group].push(m);
+  });
+  let html='';
+  Object.entries(groups).forEach(([gname,items])=>{
+    html+=`<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin:12px 0 6px;font-weight:600">${gname}</div>`;
+    items.forEach(m=>{
+      const c=cfg[m.name]||{enabled:true,permission:'everyone'};
+      const on=c.enabled!==false;
+      const perm=c.permission||'everyone';
+      const previewText=m.canEdit?(m.type==='answers'?`[${((c.answers&&c.answers.length)||EIGHTBALL.length)} ответов]`:m.type==='win_lose'?`WIN: ${c.responseWin||m.templateWin}`:`${c.response||m.template}`):m.desc;
+      html+=`
+        <div class="list-item" style="align-items:center">
+          <div style="min-width:0;flex:1">
+            <div class="lname" style="display:flex;align-items:center;gap:8px">
+              <span class="mono" style="font-size:13px">${m.label}</span>
+              <span class="tag" style="margin:0">${PERM_LABEL[perm]||perm}</span>
+              <span class="tag" style="margin:0">${c.cooldown!=null?c.cooldown:10}с КД</span>
+              ${on?'':'<span class="tag" style="margin:0;opacity:.6">выкл</span>'}
+            </div>
+            <div class="ldesc" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px">${escapeHtml(previewText)}</div>
+          </div>
+          <div class="lmeta" style="gap:6px;flex-shrink:0">
+            <label class="switch" style="margin:0" title="${on?'Выключить':'Включить'}">
+              <input type="checkbox" ${on?'checked':''} onchange="toggleBuiltin('${m.name}',this)">
+              <span class="track"></span>
+            </label>
+            <button class="btn sm" onclick="editBuiltin('${m.name}')">✎</button>
+          </div>
+        </div>`;
+    });
+  });
+  box.innerHTML=html;
+}
+
+window.toggleBuiltin=function(name,el){
+  BuiltinConfig.set(name,{enabled:el.checked});
+  renderBuiltinCmdsPanel();
+};
+
+window.editBuiltin=function(name){
+  const meta=BUILTIN_META.find(m=>m.name===name);
+  if(!meta) return;
+  const cfg=BuiltinConfig.get(name);
+  const perm=cfg.permission||meta.defaultPerm||'everyone';
+  const on=cfg.enabled!==false;
+  let extraFields='';
+  if(meta.canEdit && meta.type==='answers'){
+    const pool=(cfg.answers&&cfg.answers.length)?cfg.answers:EIGHTBALL;
+    extraFields=`
+      <div class="field">
+        <label>Ответы (каждый с новой строки)</label>
+        <textarea id="bCmdAnswers" style="min-height:140px">${escapeHtml(pool.join('\n'))}</textarea>
+        <div class="hint">Минимум 2 ответа</div>
+      </div>`;
+  } else if(meta.canEdit && meta.type==='win_lose'){
+    extraFields=`
+      <div class="field">
+        <label>Сообщение при победе</label>
+        <textarea id="bCmdRespWin">${escapeHtml(cfg.responseWin||meta.templateWin)}</textarea>
+      </div>
+      <div class="field">
+        <label>Сообщение при проигрыше</label>
+        <textarea id="bCmdRespLose">${escapeHtml(cfg.responseLose||meta.templateLose)}</textarea>
+        <div class="hint">Переменные: ${meta.vars||''}</div>
+      </div>`;
+  } else if(meta.canEdit){
+    extraFields=`
+      <div class="field">
+        <label>Текст ответа</label>
+        <textarea id="bCmdResp">${escapeHtml(cfg.response||meta.template)}</textarea>
+        <div class="hint">Переменные: ${meta.vars||''}</div>
+      </div>`;
+  }
+  openModal(`
+    <h3>Встроенная команда: ${meta.label}</h3>
+    <div class="hint" style="margin-bottom:14px">${meta.desc}</div>
+    <div class="field-row">
+      <div class="field"><label>Кто может использовать</label>
+        <select id="bCmdPerm">
+          <option value="everyone" ${perm==='everyone'?'selected':''}>Все</option>
+          <option value="sub" ${perm==='sub'?'selected':''}>Только сабы</option>
+          <option value="mod" ${perm==='mod'?'selected':''}>Только модераторы</option>
+        </select>
+      </div>
+      <div class="field"><label>Кулдаун (сек)</label>
+        <input type="number" id="bCmdCooldown" min="0" value="${cfg.cooldown!=null?cfg.cooldown:10}">
+      </div>
+    </div>
+    ${extraFields}
+    <label class="switch"><input type="checkbox" id="bCmdEnabled" ${on?'checked':''}><span class="track"></span> Активна</label>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Отмена</button>
+      <button class="btn" style="color:var(--danger);border-color:var(--danger)" onclick="resetBuiltin('${name}')">Сбросить</button>
+      <button class="btn primary" id="bCmdSave">Сохранить</button>
+    </div>`);
+  document.getElementById('bCmdSave').onclick=()=>{
+    const patch={
+      permission:document.getElementById('bCmdPerm').value,
+      enabled:document.getElementById('bCmdEnabled').checked,
+      cooldown:Math.max(0,parseInt(document.getElementById('bCmdCooldown').value,10)||0)
+    };
+    if(meta.canEdit && meta.type==='answers'){
+      const lines=document.getElementById('bCmdAnswers').value.split('\n').map(s=>s.trim()).filter(Boolean);
+      if(lines.length<2){ toast('Добавь хотя бы 2 ответа','err'); return; }
+      patch.answers=lines;
+    } else if(meta.canEdit && meta.type==='win_lose'){
+      const win=document.getElementById('bCmdRespWin').value.trim();
+      const lose=document.getElementById('bCmdRespLose').value.trim();
+      if(!win||!lose){ toast('Заполни оба сообщения','err'); return; }
+      patch.responseWin=win; patch.responseLose=lose;
+    } else if(meta.canEdit){
+      const resp=document.getElementById('bCmdResp').value.trim();
+      if(!resp){ toast('Текст ответа не может быть пустым','err'); return; }
+      patch.response=resp;
+    }
+    BuiltinConfig.set(name,patch);
+    renderBuiltinCmdsPanel();
+    closeModal();
+    toast('Сохранено ✓');
+  };
+};
+
+window.resetBuiltin=function(name){
+  if(!confirm('Сбросить настройки этой команды к стандартным?')) return;
+  const stored=load('builtin_cfg',{});
+  delete stored[name];
+  save('builtin_cfg',stored);
+  renderBuiltinCmdsPanel();
+  closeModal();
+  toast('Сброшено');
+};
+
+function renderTimersPanel(){
+  const box=document.getElementById('timerList');
+  const list=Timers.list();
+  if(!list.length){ box.innerHTML='<div class="empty">Таймеров пока нет</div>'; return; }
+  box.innerHTML=list.map((t,i)=>`
+    <div class="list-item">
+      <div>
+        <div class="lname">Каждые ${t.interval}с ${t.enabled===false?'<span class="tag">выкл</span>':'<span class="tag on">вкл</span>'}</div>
+        <div class="ldesc">${escapeHtml(t.message)}</div>
+      </div>
+      <div class="lmeta">
+        <button class="btn sm" onclick="editTimer(${i})">✎</button>
+        <button class="btn sm danger" onclick="deleteTimer(${i})">✕</button>
+      </div>
+    </div>`).join('');
+}
+window.editTimer=function(i){ const list=Timers.list(); openTimerModal(list[i],(u)=>{ list[i]=u; Timers.saveList(list); renderTimersPanel(); Timers.startAll(); }); };
+window.deleteTimer=function(i){ const list=Timers.list(); list.splice(i,1); Timers.saveList(list); renderTimersPanel(); Timers.startAll(); };
+
+function updateAuthStatusUI(){
+  // Бот IRC
+  const botStatus=document.getElementById('botTokenStatus');
+  if(IRC.connected){
+    botStatus.className='token-status good'; botStatus.textContent='✅ leimtwitch подключён к IRC';
+  } else if(IRC.ws) {
+    botStatus.className='token-status pending'; botStatus.textContent='⏳ Подключение…';
+  } else {
+    botStatus.className='token-status bad'; botStatus.textContent='❌ Не подключён — обновите токен';
+  }
+  // Стример
+  const brStatus=document.getElementById('broadcasterAuthStatus');
+  const alert=document.getElementById('titleCategoryAlert');
+  const smNotice=document.getElementById('streamMgmtAuthNotice');
+  if(BROADCASTER && BROADCASTER.token){
+    brStatus.className='token-status good'; brStatus.textContent=`✅ ${BROADCASTER.login} авторизован`;
+    if(alert) alert.classList.add('hidden');
+    if(smNotice) smNotice.style.display='none';
+    const revokeBtn=document.getElementById('settRevokeBroadcaster');
+    if(revokeBtn) revokeBtn.classList.remove('hidden');
+  } else {
+    brStatus.className='token-status bad'; brStatus.textContent='❌ Не авторизован (!title и !category не работают)';
+    if(alert) alert.classList.remove('hidden');
+    if(smNotice) smNotice.style.display='block';
+    const revokeBtn=document.getElementById('settRevokeBroadcaster');
+    if(revokeBtn) revokeBtn.classList.add('hidden');
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   MODALS
+   ══════════════════════════════════════════════════════════════════════ */
+function openModal(html){
+  const root=document.getElementById('modalRoot');
+  root.innerHTML=`<div class="modal-bg" id="modalBg"><div class="modal">${html}</div></div>`;
+  document.getElementById('modalBg').addEventListener('click',e=>{ if(e.target.id==='modalBg') closeModal(); });
+}
+function closeModal(){ document.getElementById('modalRoot').innerHTML=''; }
+window.closeModal=closeModal;
+
+function openCommandModal(cmd,onSave){
+  cmd=cmd||{name:'',response:'',cooldown:10,permission:'everyone',enabled:true,uses:0};
+  openModal(`
+    <h3>${cmd.name?'Редактировать команду':'Новая команда'}</h3>
+    <div class="field"><label>Название (без префикса)</label><input type="text" id="mCmdName" value="${escapeHtml(cmd.name)}"></div>
+    <div class="field"><label>Ответ бота</label><textarea id="mCmdResp">${escapeHtml(cmd.response)}</textarea>
+      <div class="hint">Переменные: {user} {channel} {count} {random}</div></div>
+    <div class="field-row">
+      <div class="field"><label>Кулдаун (сек)</label><input type="number" id="mCmdCd" value="${cmd.cooldown}"></div>
+      <div class="field"><label>Доступ</label>
+        <select id="mCmdPerm">
+          <option value="everyone" ${cmd.permission==='everyone'?'selected':''}>Все</option>
+          <option value="sub" ${cmd.permission==='sub'?'selected':''}>Только сабы</option>
+          <option value="mod" ${cmd.permission==='mod'?'selected':''}>Только модераторы</option>
+        </select>
+      </div>
+    </div>
+    <label class="switch"><input type="checkbox" id="mCmdEnabled" ${cmd.enabled!==false?'checked':''}><span class="track"></span> Активна</label>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Отмена</button>
+      <button class="btn primary" id="mCmdSave">Сохранить</button>
+    </div>`);
+  document.getElementById('mCmdSave').onclick=()=>{
+    const name=document.getElementById('mCmdName').value.trim().toLowerCase().replace(/\s+/g,'');
+    const response=document.getElementById('mCmdResp').value.trim();
+    if(!name||!response){ toast('Заполни название и ответ','err'); return; }
+    if(BUILTIN_COMMANDS[name]){ toast('Это имя занято встроенной командой','err'); return; }
+    onSave({ name, response, cooldown:parseInt(document.getElementById('mCmdCd').value,10)||0,
+      permission:document.getElementById('mCmdPerm').value, enabled:document.getElementById('mCmdEnabled').checked, uses:cmd.uses||0 });
+    closeModal();
+  };
+}
+
+function openTimerModal(timer,onSave){
+  timer=timer||{interval:600,message:'',enabled:true};
+  openModal(`
+    <h3>Таймер сообщения</h3>
+    <div class="field"><label>Текст сообщения</label><textarea id="mTmMsg">${escapeHtml(timer.message)}</textarea></div>
+    <div class="field"><label>Интервал (секунды, мин. 30)</label><input type="number" id="mTmInt" value="${timer.interval}" min="30"></div>
+    <label class="switch"><input type="checkbox" id="mTmEnabled" ${timer.enabled!==false?'checked':''}><span class="track"></span> Активен</label>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Отмена</button>
+      <button class="btn primary" id="mTmSave">Сохранить</button>
+    </div>`);
+  document.getElementById('mTmSave').onclick=()=>{
+    const message=document.getElementById('mTmMsg').value.trim();
+    const interval=parseInt(document.getElementById('mTmInt').value,10)||600;
+    if(!message){ toast('Введи текст сообщения','err'); return; }
+    onSave({ id:timer.id||('t'+Date.now()), message, interval, enabled:document.getElementById('mTmEnabled').checked });
+    closeModal();
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   NAV
+   ══════════════════════════════════════════════════════════════════════ */
+function switchPanel(name){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.panel===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+name));
+  const titles={overview:['Обзор','Статистика и управление стримом'],chat:['Чат','Живой чат канала #'+CHANNEL],commands:['Команды','Кастомные команды бота'],economy:['Экономика','Система очков'],games:['Игры чата','Интерактивные мини-игры'],moderation:['Модерация','Автофильтрация чата'],timers:['Таймеры','Периодические сообщения'],settings:['Настройки','Токены, канал и данные']};
+  const t=titles[name]||['LeimTwitchBot',''];
+  document.getElementById('topTitle').textContent=t[0];
+  document.getElementById('topSub').textContent=t[1];
+  if(name==='chat'){
+    const dot=document.getElementById('chatNavDot'); if(dot) dot.classList.remove('show');
+    const log=document.getElementById('chatlog'); if(log) log.scrollTop=log.scrollHeight;
+    hideNewPill();
+  }
+}
+document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>switchPanel(b.dataset.panel)));
+
+/* ══════════════════════════════════════════════════════════════════════
+   SIGNAL
+   ══════════════════════════════════════════════════════════════════════ */
+function initSignal(){
+  const wrap=document.getElementById('signal'); const N=22;
+  for(let i=0;i<N;i++){ const bar=document.createElement('i'); bar.style.height='4px'; wrap.appendChild(bar); }
+  setInterval(()=>{
+    IRC.activity=IRC.activity.filter(ts=>Date.now()-ts<10000);
+    const rate=IRC.activity.length;
+    [...wrap.children].forEach(bar=>{ const h=4+Math.min(22,Math.random()*Math.min(22,rate*4+2)); bar.style.height=h+'px'; bar.style.opacity=rate>0?(0.4+Math.random()*0.6):0.25; });
+  },260);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   WIRE CONTROLS
+   ══════════════════════════════════════════════════════════════════════ */
+function wireControls(){
+  document.getElementById('chatSend').onclick=()=>{
+    const i=document.getElementById('chatInput');
+    const text=i.value.trim();
+    if(text){
+      sendChat(text);
+      // ИСПРАВЛЕНИЕ: Twitch IRC не возвращает боту его собственные сообщения,
+      // поэтому обрабатываем команды из панели локально сразу при отправке.
+      const prefix=Commands.settings().prefix||'!';
+      if(text.startsWith(prefix)){
+        const parts=text.slice(prefix.length).trim().split(/\s+/);
+        const name=parts[0].toLowerCase(), args=parts.slice(1);
+        if(name){
+          const modBadges={broadcaster:true,mod:true,subscriber:false,vip:false};
+          if(BUILTIN_COMMANDS[name]){
+            const bcfg=BuiltinConfig.get(name);
+            if(bcfg.enabled!==false) BUILTIN_COMMANDS[name](BOT_LOGIN,BOT_LOGIN,args,modBadges);
+          } else {
+            const cmd=Commands.list().find(c=>c.name.toLowerCase()===name&&c.enabled!==false);
+            if(cmd){
+              cmd.uses=(cmd.uses||0)+1;
+              const list=Commands.list(); const idx=list.findIndex(c=>c.name===cmd.name);
+              if(idx>=0){ list[idx]=cmd; Commands.saveList(list); }
+              sendChat(fillPlaceholders(cmd.response,{user:BOT_LOGIN,channel:CHANNEL,count:cmd.uses}));
+            }
+          }
+        }
+      }
+      i.value=''; document.getElementById('chatCounter').textContent='0/480'; document.getElementById('chatCounter').classList.remove('warn');
+    }
+  };
+  document.getElementById('chatInput').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('chatSend').click(); });
+  document.getElementById('chatInput').addEventListener('input',e=>{
+    const len=e.target.value.length;
+    const c=document.getElementById('chatCounter');
+    c.textContent=len+'/480';
+    c.classList.toggle('warn', len>420);
+  });
+  document.getElementById('chatNewPill').onclick=()=>{
+    const log=document.getElementById('chatlog');
+    log.scrollTop=log.scrollHeight;
+    hideNewPill();
+  };
+
+  document.querySelectorAll('[data-mod]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const user=document.getElementById('modUser').value.trim();
+      if(!user){ toast('Укажи никнейм','err'); return; }
+      const [action,arg]=btn.dataset.mod.split(':');
+      const map={ timeout:`timeout ${user} ${arg}`, ban:`ban ${user}`, unban:`unban ${user}`, vip:`vip ${user}`, unvip:`unvip ${user}`, mod:`mod ${user}`, unmod:`unmod ${user}` };
+      sendModCmd(map[action]);
+    });
+  });
+
+  document.getElementById('qaShoutout').onclick=()=>sendChat('👋 Всем привет! Спасибо за просмотр стрима 💜');
+  document.getElementById('qaSlowmode').onclick=()=>sendModCmd('slow 10');
+  document.getElementById('qaSubonly').onclick=()=>sendModCmd('subscribers');
+  document.getElementById('qaSuboff').onclick=()=>sendModCmd('subscribersoff');
+  document.getElementById('qaClear').onclick=()=>{ if(confirm('Очистить чат?')) sendModCmd('clear'); };
+  document.getElementById('qaGoChat').onclick=()=>switchPanel('chat');
+
+  // Управление стримом
+  const titleInp=document.getElementById('quickTitle');
+  const catInp=document.getElementById('quickCategory');
+  titleInp.addEventListener('input',()=>{ titleInp.dataset.edited='1'; });
+  catInp.addEventListener('input',()=>{ catInp.dataset.edited='1'; });
+  document.getElementById('quickTitleBtn').onclick=async()=>{
+    const v=titleInp.value.trim(); if(!v){ toast('Введите название','err'); return; }
+    await changeTitle(v,false,null); titleInp.dataset.edited='';
+  };
+  titleInp.addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('quickTitleBtn').click(); });
+  document.getElementById('quickCategoryBtn').onclick=async()=>{
+    const v=catInp.value.trim(); if(!v){ toast('Введите категорию','err'); return; }
+    await changeCategory(v,false,null); catInp.dataset.edited='';
+  };
+  catInp.addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('quickCategoryBtn').click(); });
+
+  // OAuth кнопки
+  [document.getElementById('btnOAuthLogin'),document.getElementById('alertOAuthBtn'),document.getElementById('settOAuthBtn'),document.getElementById('streamMgmtAuthBtn')].forEach(b=>{ if(b) b.addEventListener('click',beginOAuth); });
+  const revokeBtn=document.getElementById('settRevokeBroadcaster');
+  if(revokeBtn) revokeBtn.addEventListener('click',revokeBroadcaster);
+
+  // Команды
+  document.getElementById('btnAddCmd').onclick=()=>openCommandModal(null,(c)=>{ const l=Commands.list(); l.push(c); Commands.saveList(l); renderCommandsPanel(); });
+  ['cmdPrefix','cmdGlobalCd'].forEach(id=>{ document.getElementById(id).addEventListener('change',()=>{
+    save('cmd_settings',{ prefix:document.getElementById('cmdPrefix').value||'!', globalCooldown:parseInt(document.getElementById('cmdGlobalCd').value,10)||0 });
+  }); });
+
+  // Экономика
+  ['ecoName','ecoRate','ecoMsgBonus'].forEach(id=>{ document.getElementById(id).addEventListener('change',()=>{
+    save('eco_settings',{ name:document.getElementById('ecoName').value||'очки', rate:parseInt(document.getElementById('ecoRate').value,10)||0, msgBonus:parseInt(document.getElementById('ecoMsgBonus').value,10)||0 });
+  }); });
+  document.getElementById('ecoManualBtn').onclick=()=>{
+    const u=document.getElementById('ecoManualUser').value.trim().toLowerCase();
+    const amt=parseInt(document.getElementById('ecoManualAmt').value,10);
+    if(!u||!amt){ toast('Укажи ник и сумму','err'); return; }
+    Economy.add(u,amt); const b=Economy.balances(); if(!b[u+'__name']){ b[u+'__name']=u; Economy.saveBalances(b); }
+    toast(`Выдано ${amt} очков → ${u}`,'ok'); renderEconomyPanel();
+    document.getElementById('ecoManualUser').value=''; document.getElementById('ecoManualAmt').value='';
+  };
+  document.getElementById('ecoTakeBtn').onclick=()=>{
+    const u=document.getElementById('ecoTakeUser').value.trim().toLowerCase();
+    const amt=parseInt(document.getElementById('ecoTakeAmt').value,10);
+    if(!u||!amt){ toast('Укажи ник и сумму','err'); return; }
+    Economy.add(u,-amt); toast(`Снято ${amt} очков у ${u}`,'ok'); renderEconomyPanel();
+    document.getElementById('ecoTakeUser').value=''; document.getElementById('ecoTakeAmt').value='';
+  };
+
+  // Игры
+  ['anagramWords','anagramReward'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{
+    save('games_settings',Object.assign(load('games_settings',{}),{anagramWords:document.getElementById('anagramWords').value,anagramReward:document.getElementById('anagramReward').value}));
+  }));
+  ['mathMax','mathReward'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{
+    save('games_settings',Object.assign(load('games_settings',{}),{mathMax:document.getElementById('mathMax').value,mathReward:document.getElementById('mathReward').value}));
+  }));
+  document.getElementById('pollStart').onclick=()=>{
+    const q=document.getElementById('pollQuestion').value.trim();
+    const opts=document.getElementById('pollOptions').value.split(',').map(s=>s.trim()).filter(Boolean).slice(0,5);
+    if(!q||opts.length<2){ toast('Нужен вопрос и 2+ варианта','err'); return; }
+    Games.poll={question:q,options:opts,votes:{}};
+    sendChat(`🗳 Опрос: ${q} — `+opts.map((o,i)=>`${i+1}) ${o}`).join(' | ')+' — голосуй командой !голос N');
+    renderPoll();
+  };
+  document.getElementById('pollStop').onclick=()=>{ if(Games.poll) sendChat('🗳 Опрос завершён!'); Games.poll=null; renderPoll(); };
+  document.getElementById('giveawayStart').onclick=()=>{
+    const kw=document.getElementById('giveawayKeyword').value.trim()||'!участвую';
+    Games.giveaway={keyword:kw,entries:[],active:true,winner:null};
+    document.getElementById('giveawayRoulette').classList.add('hidden');
+    document.getElementById('giveawayTrack').innerHTML='';
+    sendChat(`🎁 Розыгрыш! Напиши ${kw} в чат чтобы участвовать!`); renderGiveaway();
+  };
+  document.getElementById('giveawayPick').onclick=()=>{ spinGiveawayRoulette(); };
+  document.getElementById('giveawayStop').onclick=()=>{
+    document.getElementById('giveawayRoulette').classList.add('hidden');
+    document.getElementById('giveawayTrack').innerHTML='';
+    Games.giveaway=null; renderGiveaway();
+  };
+
+  // Модерация
+  ['modEnabled','modLinks','modBadwords','modCaps','modRepeat','modAction'].forEach(id=>document.getElementById(id).addEventListener('change',saveModSettings));
+
+  // Таймеры
+  document.getElementById('btnAddTimer').onclick=()=>openTimerModal(null,(t)=>{ const l=Timers.list(); l.push(t); Timers.saveList(l); renderTimersPanel(); Timers.startAll(); });
+
+  // Настройки
+  document.getElementById('settReconnect').onclick=()=>{
+    const v=document.getElementById('settChannel').value.trim().toLowerCase();
+    if(v){ CHANNEL=v; Store.set('ltb_channel',CHANNEL); document.getElementById('sbChannel').textContent='#'+CHANNEL; }
+    ircConnect(); resolveBroadcasterId(); refreshStreamInfo();
+  };
+
+  document.getElementById('saveBotToken').onclick=()=>{
+    const v=document.getElementById('newBotToken').value.trim();
+    if(!v){ toast('Введи токен','err'); return; }
+    setBotToken(v); document.getElementById('newBotToken').value='';
+    toast('Токен бота сохранён, переподключаюсь…','ok');
+    setTimeout(()=>{ ircConnect(); },500);
+  };
+
+  document.getElementById('saveFaceitSettings').onclick=()=>{
+    const apiKey=document.getElementById('faceitApiKey').value.trim();
+    const nickname=document.getElementById('faceitNickname').value.trim()||'ddrt';
+    const playerId=document.getElementById('faceitPlayerId').value.trim();
+    const steamId=document.getElementById('faceitSteamId').value.trim();
+    const proxyUrl=document.getElementById('faceitProxyUrl').value.trim();
+    const patch={nickname,playerId,steamId,proxyUrl};
+    if(apiKey) patch.apiKey=apiKey;
+    FaceitConfig.set(patch);
+    document.getElementById('faceitApiKey').value='';
+    toast('Настройки Faceit сохранены','ok');
+    document.getElementById('faceitApiKey').placeholder='•••••••• (ключ сохранён, введите новый чтобы заменить)';
+  };
+
+  document.getElementById('testFaceitSettings').onclick=async()=>{
+    const box=document.getElementById('faceitTestResult');
+    box.textContent='Проверяю…';
+    box.style.color='var(--muted)';
+    const fc=FaceitConfig.get();
+    try{
+      const s=await fetchFaceitSummary(fc.nickname||'ddrt',fc.playerId||'',fc.steamId||'');
+      box.textContent=`✅ Успех: ${s.nickname} — ELO ${s.elo!=null?s.elo:'—'}, сегодня ${s.wins}W/${s.losses}L`;
+      box.style.color='var(--cyan)';
+    }catch(e){
+      console.error('[Faceit test] error:',e&&e.message,e);
+      box.textContent='❌ Ошибка: '+faceitErrorMessage(e);
+      box.style.color='var(--danger)';
+    }
+  };
+
+  document.getElementById('exportData').onclick=()=>{
+    const data={};
+    Object.keys(localStorage).filter(k=>k.startsWith(Store.ns(CHANNEL))).forEach(k=>data[k]=localStorage.getItem(k));
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='leimtwitchbot-'+CHANNEL+'.json'; a.click();
+  };
+  document.getElementById('importDataBtn').onclick=()=>document.getElementById('importDataFile').click();
+  document.getElementById('importDataFile').addEventListener('change',e=>{
+    const file=e.target.files[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=()=>{ try{ const data=JSON.parse(reader.result); Object.entries(data).forEach(([k,v])=>localStorage.setItem(k,v)); toast('Импортировано, перезагрузка…','ok'); setTimeout(()=>location.reload(),900); }catch(err){ toast('Некорректный файл','err'); } };
+    reader.readAsText(file);
+  });
+  document.getElementById('wipeData').onclick=()=>{
+    if(!confirm('Удалить все данные канала (очки, команды, таймеры)?')) return;
+    Object.keys(localStorage).filter(k=>k.startsWith(Store.ns(CHANNEL))).forEach(k=>localStorage.removeItem(k));
+    toast('Данные сброшены','ok'); setTimeout(()=>location.reload(),700);
+  };
+
+  document.getElementById('btnLogout').onclick=logout;
+}
+
+function saveModSettings(){
+  save('mod_settings',{
+    enabled:document.getElementById('modEnabled').checked,
+    badwords:document.getElementById('modBadwords').value.split(',').map(s=>s.trim()).filter(Boolean),
+    links:document.getElementById('modLinks').checked,
+    capsLimit:parseInt(document.getElementById('modCaps').value,10)||100,
+    repeatLimit:parseInt(document.getElementById('modRepeat').value,10)||5,
+    action:document.getElementById('modAction').value
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   INIT
+   ══════════════════════════════════════════════════════════════════════ */
+async function refreshStreamInfo(){
+  const info=await fetchStreamInfo();
+  setLive(!!info,info);
+  const count=await fetchChattersCount();
+  document.getElementById('stChatters').textContent=count!=null?count:'—';
+}
+
+function loadPanelsFromStorage(){
+  const s=Commands.settings();
+  document.getElementById('cmdPrefix').value=s.prefix;
+  document.getElementById('cmdGlobalCd').value=s.globalCooldown;
+  renderCommandsPanel(); renderEconomyPanel();
+  const gs=load('games_settings',{});
+  document.getElementById('anagramWords').value=gs.anagramWords||'twitch, стример, чат, донат, рейд, подписка, клип, фолловер';
+  document.getElementById('anagramReward').value=gs.anagramReward!=null?gs.anagramReward:50;
+  document.getElementById('mathMax').value=gs.mathMax||20;
+  document.getElementById('mathReward').value=gs.mathReward!=null?gs.mathReward:30;
+  const ms=getModSettings();
+  document.getElementById('modEnabled').checked=ms.enabled;
+  document.getElementById('modBadwords').value=(ms.badwords||[]).join(', ');
+  document.getElementById('modLinks').checked=ms.links;
+  document.getElementById('modCaps').value=ms.capsLimit;
+  document.getElementById('modRepeat').value=ms.repeatLimit;
+  document.getElementById('modAction').value=ms.action;
+  renderTimersPanel();
+  document.getElementById('settChannel').value=CHANNEL;
+  document.getElementById('faceitNickname').value=(FaceitConfig.get().nickname)||'ddrt';
+  document.getElementById('faceitPlayerId').value=(FaceitConfig.get().playerId)||'';
+  document.getElementById('faceitSteamId').value=(FaceitConfig.get().steamId)||'';
+  document.getElementById('faceitProxyUrl').value=(FaceitConfig.get().proxyUrl)||'';
+  document.getElementById('faceitApiKey').placeholder=FaceitConfig.get().apiKey?'•••••••• (ключ сохранён, введите новый чтобы заменить)':'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx';
+  updateAuthStatusUI();
+}
+
+function logout(){
+  localStorage.removeItem('ltb_channel');
+  ircDisconnect();
+  location.reload();
+}
+
+async function boot(){
+  // Кнопки на экране логина
+  document.getElementById('btnBotLogin').addEventListener('click',()=>{
+    const ch=document.getElementById('botChannelInput').value.trim().toLowerCase();
+    if(!ch){ toast('Введи название своего канала','err'); return; }
+    Store.set('ltb_channel',ch);
+    toast('Подключаю бота к #'+ch+'…','ok');
+    setTimeout(()=>location.reload(),400);
+  });
+  document.getElementById('botChannelInput').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('btnBotLogin').click(); });
+  document.getElementById('btnOAuthLogin').addEventListener('click',()=>{
+    const ch=document.getElementById('botChannelInput').value.trim().toLowerCase();
+    if(ch) Store.set('ltb_channel',ch);
+    beginOAuth();
+  });
+
+  // Восстановить OAuth (стример) — может обновить hash или storage
+  await tryRestoreOAuth();
+
+  // Восстановить канал
+  CHANNEL=Store.raw('ltb_channel',null);
+  if(!CHANNEL){
+    // Нет канала — остаёмся на логин-экране
+    return;
+  }
+
+  // Скрыть логин, показать приложение
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').classList.add('active');
+  document.getElementById('sbChannel').textContent='#'+CHANNEL;
+
+  wireControls();
+  initSignal();
+  migrateDefaultCommands();
+  loadPanelsFromStorage();
+  switchPanel('overview');
+
+  ircConnect();
+  await resolveBroadcasterId();
+  await refreshStreamInfo();
+  setInterval(refreshStreamInfo,60*1000);
+  setInterval(updateAuthStatusUI,10*1000);
+  startEconomyTicker();
+  Timers.startAll();
+}
+
+boot();
+</script>
+
+<!-- Доп. визуальные фишки: не трогают основную логику бота -->
+<script>
+(function(){
+  // Курсорный блик на карточках
+  document.addEventListener('pointermove', function(e){
+    var el = e.target.closest ? e.target.closest('.card, .stat-card') : null;
+    if(!el) return;
+    var r = el.getBoundingClientRect();
+    el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+    el.style.setProperty('--my', (e.clientY - r.top) + 'px');
+  }, {passive:true});
+
+  // Лёгкая "пружинка" при изменении значений в статкартах
+  document.querySelectorAll('.stat-card .val').forEach(function(el){
+    try{
+      var obs = new MutationObserver(function(){
+        el.classList.remove('pop');
+        void el.offsetWidth;
+        el.classList.add('pop');
+      });
+      obs.observe(el, {childList:true, characterData:true, subtree:true});
+    }catch(e){}
+  });
+
+  // Мини-конфетти при выборе победителя розыгрыша
+  function burstConfetti(originEl){
+    var r = originEl.getBoundingClientRect();
+    var emojis = ['🎉','✨','🎊','💫'];
+    for(var i=0;i<14;i++){
+      var bit = document.createElement('span');
+      bit.className = 'confetti-bit';
+      bit.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+      var x = r.left + r.width/2 + (Math.random()*160-80);
+      var y = r.top + r.height/2;
+      var dx = (Math.random()*220-110)+'px';
+      var dy = (-(120+Math.random()*140))+'px';
+      bit.style.left = x+'px';
+      bit.style.top = y+'px';
+      bit.style.setProperty('--fall', 'translate('+dx+','+dy+')');
+      bit.style.setProperty('--spin', (Math.random()*360-180)+'deg');
+      document.body.appendChild(bit);
+      (function(node){ setTimeout(function(){ node.remove(); }, 1200); })(bit);
+    }
+  }
+  // Доступно глобально: вызывается после того как рулетка розыгрыша
+  // остановится на победителе (см. spinGiveawayRoulette в основном скрипте)
+  window.burstGiveawayConfetti = burstConfetti;
+})();
+</script>
+</body>
+</html>
